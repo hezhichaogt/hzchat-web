@@ -49,15 +49,32 @@ jobs:
             rm -rf *
             echo "Cleaned target directory: ${{ env.VPS_TARGET_PATH }}"
 
-      - name: Deploy via SCP to VPS
+      - name: Deploy dist folder via SCP
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: 22
-          source: ${{ env.BUILD_DIR }}/*
-          target: ${{ env.VPS_TARGET_PATH }}/
+          source: ${{ env.BUILD_DIR }}
+          target: ${{ env.VPS_TARGET_PATH }}
+
+      - name: Move files and Cleanup dist folder
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: 22
+          script: |
+            TARGET_PATH="${{ env.VPS_TARGET_PATH }}"
+            BUILD_DIR="${{ env.BUILD_DIR }}"
+
+            mv ${TARGET_PATH}/${BUILD_DIR}/* ${TARGET_PATH}/
+            mv ${TARGET_PATH}/${BUILD_DIR}/.* ${TARGET_PATH}/ 2>/dev/null || true 
+            rm -rf ${TARGET_PATH}/${BUILD_DIR}
+
+            echo "Successfully moved files and deleted dist folder on VPS."
 
       - name: Deployment Success
         run: echo "Frontend deployed successfully to VPS!"
