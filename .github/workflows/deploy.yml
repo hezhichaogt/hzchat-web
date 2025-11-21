@@ -37,6 +37,18 @@ jobs:
           VITE_WS_BASE_URL: ${{ secrets.PROD_WS_URL }}
         run: npm run build
 
+      - name: Run Cleanup on VPS before Deploy
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: 22
+          script: |
+            cd ${{ env.VPS_TARGET_PATH }}
+            rm -rf *
+            echo "Cleaned target directory: ${{ env.VPS_TARGET_PATH }}"
+
       - name: Deploy via SCP to VPS
         uses: appleboy/scp-action@v0.1.7
         with:
@@ -44,8 +56,8 @@ jobs:
           username: ${{ secrets.VPS_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: 22
-          source: ${{ env.BUILD_DIR }}/*
-          target: ${{ env.VPS_TARGET_PATH }}
+          source: ${{ env.BUILD_DIR }}/
+          target: ${{ env.VPS_TARGET_PATH }}/
 
       - name: Deployment Success
         run: echo "Frontend deployed successfully to VPS!"
