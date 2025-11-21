@@ -44,7 +44,7 @@ jobs:
           username: ${{ secrets.VPS_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: 22
-          source: ${{ env.BUILD_DIR }}/.
+          source: ${{ env.BUILD_DIR }}/*
           target: ${{ env.VPS_TARGET_PATH }}
 
       - name: Deployment Success
