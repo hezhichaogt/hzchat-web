@@ -54,7 +54,6 @@
 // 5. User Interface: Integrates the message list, input box, info header, and 
 //    user list, adapting the layout for mobile/desktop.
 //
-
 import { ref, onMounted, computed, onUnmounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { NCard, useMessage } from 'naive-ui';
@@ -71,6 +70,7 @@ import Messages from '@/components/chat/Messages.vue';
 import InfoHeader from '@/components/chat/InfoHeader.vue';
 import Users from '@/components/chat/Users.vue';
 import ChatInput from '@/components/chat/ChatInput.vue';
+import { useHead } from '@unhead/vue';
 
 const route = useRoute();
 const router = useRouter();
@@ -93,6 +93,65 @@ const isMobile = ref(window.innerWidth < MOBILE_BREAKPOINT);
 const handleResize = () => {
   isMobile.value = window.innerWidth < MOBILE_BREAKPOINT;
 };
+
+//
+// SEO
+//
+const dynamicTitle = computed(() => {
+  if (chatCode.value) {
+    return `Chat ${chatCode.value}`;
+  }
+  return 'Loading Chat...';
+});
+
+const BASE_URL = import.meta.env.VITE_BASE_URL || window.location.origin;
+const dynamicUrl = computed(() => {
+  if (chatCode.value) {
+    return `${BASE_URL}/chat/${chatCode.value}`;
+  }
+  return BASE_URL;
+});
+
+const dynamicDescription = computed(() => {
+  if (chatCode.value) {
+    return `Join Chat ${chatCode.value}! Create your temporary, zero-record room instantly. No trace, no burden.`;
+  }
+  return 'Create your temporary, zero-record chat room instantly. No trace, no burden.';
+});
+
+useHead({
+  title: dynamicTitle,
+  meta: [
+    {
+      property: 'og:url',
+      content: dynamicUrl,
+    },
+    {
+      property: 'og:title',
+      content: dynamicTitle,
+    },
+    {
+      property: 'og:description',
+      content: dynamicDescription,
+    },
+    {
+      name: 'twitter:url',
+      content: dynamicUrl,
+    },
+    {
+      name: 'twitter:title',
+      content: dynamicTitle,
+    },
+    {
+      name: 'twitter:description',
+      content: dynamicDescription,
+    },
+    {
+      name: 'description',
+      content: dynamicDescription,
+    },
+  ],
+});
 
 const WS_BASE_URL = import.meta.env.VITE_WS_BASE_URL;
 

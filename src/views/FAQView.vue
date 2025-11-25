@@ -23,10 +23,36 @@
 //
 // Frequently Asked Questions (FAQ) page view component.
 //
-
 import { computed } from 'vue';
 import { NH1, NGradientText, NCollapse, NCollapseItem, NH2, useThemeVars } from 'naive-ui';
 import faqData from '@/data/faq';
+import { useHead } from '@unhead/vue';
+
+//
+// SEO
+//
+const BASE_URL = import.meta.env.VITE_BASE_URL || window.location.origin;
+useHead({
+    title: 'FAQ - Questions about Zero-Log, Privacy, and Usage',
+    meta: [
+        {
+            name: 'description',
+            content: 'Find answers to frequently asked questions about HZ Chat\'s Zero Logging policy, data privacy, security, and terms of service. Get details on PII, chat history, and platform usage.',
+        },
+        {
+            property: 'og:title',
+            content: 'FAQ - Questions about Zero-Log, Privacy, and Usage',
+        },
+        {
+            property: 'og:description',
+            content: 'Find answers to frequently asked questions about HZ Chat\'s Zero Logging policy, data privacy, security, and terms of service. Get details on PII, chat history, and platform usage.',
+        },
+        {
+            property: 'og:url',
+            content: `${BASE_URL}/faq`,
+        },
+    ],
+});
 
 const themeVars = useThemeVars();
 const actionColor = computed(() => themeVars.value.actionColor);

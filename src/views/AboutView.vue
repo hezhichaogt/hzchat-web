@@ -71,9 +71,35 @@
 //
 // About page view component.
 //
-
 import { computed } from 'vue';
 import { NH1, NGradientText, NP, NDivider, NH2, NA, NCard, NList, NListItem, NThing, NButton, useThemeVars } from 'naive-ui';
+import { useHead } from '@unhead/vue';
+
+//
+// SEO
+//
+const BASE_URL = import.meta.env.VITE_BASE_URL || window.location.origin;
+useHead({
+    title: 'About HZ Chat: Instant, Temporary, Zero-Log',
+    meta: [
+        {
+            name: 'description',
+            content: 'Learn about HZ Chat\'s commitment to zero-log, traceless communication. Zero PII collected, open-source verified. The ultimate private chat platform.',
+        },
+        {
+            property: 'og:title',
+            content: 'About HZ Chat: Instant, Temporary, Zero-Log',
+        },
+        {
+            property: 'og:description',
+            content: 'Learn about HZ Chat\'s commitment to zero-log, traceless communication. Zero PII collected, open-source verified. The ultimate private chat platform.',
+        },
+        {
+            property: 'og:url',
+            content: `${BASE_URL}/about`,
+        },
+    ],
+});
 
 const themeVars = useThemeVars();
 const primaryColor = computed(() => themeVars.value.primaryColor);

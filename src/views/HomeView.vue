@@ -3,11 +3,11 @@
 
     <div class="welcome-section">
       <n-h1 align-text prefix="bar" class="welcome-title">
-        Start a Temporary Chat.
+        Zero-Record Messaging. Traceless. Start Now.
       </n-h1>
 
       <n-text depth="3" class="welcome-desc">
-        No registration required. We never store your conversation content.
+        No registration required. We never store your conversation content. Open-source verification.
       </n-text>
     </div>
 
@@ -69,7 +69,6 @@
 // 4. UI/UX: Provides a clear process for creation and joining, along with 
 //    loading state management.
 //
-
 import { ref, watch } from 'vue';
 import { storeToRefs } from 'pinia';
 import { useRouter } from 'vue-router';
@@ -78,6 +77,19 @@ import { ChatboxOutline, PeopleOutline, LogInOutline } from '@vicons/ionicons5';
 import type { ChatType } from '@/types/chat';
 import { useGuestStore } from '@/stores/guest';
 import { createChat, checkChatStatus } from '@/services/chat';
+import { useHead } from '@unhead/vue';
+
+//
+// SEO
+//
+useHead({
+  meta: [
+    {
+      name: 'description',
+      content: 'HZ Chat offers traceless, instant messaging with a strict zero-record policy. Create a temporary, low-social-burden room for private, thematic discussions. No signup needed.',
+    }
+  ],
+});
 
 const message = useMessage();
 const router = useRouter();
