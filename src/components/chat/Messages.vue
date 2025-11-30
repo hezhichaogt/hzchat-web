@@ -114,7 +114,7 @@ onUnmounted(() => {
 }
 
 .messages-wrapper {
-    padding: 8px 12px 8px;
+    padding: 16px 12px 16px;
     display: flex;
     flex-direction: column;
     gap: 16px;
