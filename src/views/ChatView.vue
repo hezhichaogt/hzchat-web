@@ -5,7 +5,7 @@
       <FatalErrorPage />
     </template>
 
-    <template v-else-if="connectStatus === 'INIT' || connectStatus === 'CONNECTING'">
+    <template v-else-if="(connectStatus === 'INIT' || connectStatus === 'CONNECTING') && !hasConnectedEver">
       <LoadingPage :status="connectStatus" />
     </template>
 
@@ -334,7 +334,8 @@ const {
   closeConnectionByUser,
   initiateConnection,
   isReady,
-  retryCount
+  retryCount,
+  hasConnectedEver
 } = useWebSocketReconnector({
   wsUrl,
   onMessage: handleWSMessage,

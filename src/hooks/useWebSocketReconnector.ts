@@ -35,6 +35,8 @@ export function useWebSocketReconnector({ wsUrl, onMessage, onConnected }: WebSo
 
   const abnormalCloseCount = ref(0)
 
+  const hasConnectedEver = ref(false)
+
   const calculateDelay = (attempt: number): number => {
     const delay = INITIAL_DELAY_MS * BACKOFF_FACTOR ** attempt
     return Math.min(delay, MAX_DELAY_MS)
@@ -74,6 +76,7 @@ export function useWebSocketReconnector({ wsUrl, onMessage, onConnected }: WebSo
     connectStatus.value = 'CONNECTED'
     retryCount.value = 0
     abnormalCloseCount.value = 0
+    hasConnectedEver.value = true
     onConnected()
   }
 
@@ -192,5 +195,6 @@ export function useWebSocketReconnector({ wsUrl, onMessage, onConnected }: WebSo
     sendData,
     closeConnectionByUser,
     isReady: computed(() => connectStatus.value === 'CONNECTED'),
+    hasConnectedEver,
   }
 }
