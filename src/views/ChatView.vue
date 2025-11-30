@@ -88,6 +88,8 @@ const messages = ref<ClientMessage[]>([]);
 const ACK_TIMEOUT_MS = 5000;
 const ackTimers = new Map<string, number>();
 
+const hasSystemMessageShown = ref(false);
+
 const MOBILE_BREAKPOINT = 768;
 const isMobile = ref(window.innerWidth < MOBILE_BREAKPOINT);
 const handleResize = () => {
@@ -267,12 +269,13 @@ const handleACKMessage = (message: ServerMessage) => {
 }
 
 const handleWsConnected = () => {
-  if (retryCount.value === 0) {
+  if (!hasSystemMessageShown.value) {
     addNewSystemMessage({
       id: `sys_init_${Date.now()}`,
       timestamp: Date.now(),
       content: 'Chat session started.'
     });
+    hasSystemMessageShown.value = true;
   }
 };
 
@@ -334,7 +337,6 @@ const {
   closeConnectionByUser,
   initiateConnection,
   isReady,
-  retryCount,
   hasConnectedEver
 } = useWebSocketReconnector({
   wsUrl,
@@ -418,6 +420,8 @@ const handleLeaveChat = () => {
 
   ackTimers.forEach(timerId => clearTimeout(timerId));
   ackTimers.clear();
+
+  hasSystemMessageShown.value = false;
 
   router.replace({ name: 'Home' });
 };
