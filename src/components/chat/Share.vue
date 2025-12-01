@@ -13,8 +13,7 @@
         <n-modal v-model:show="showQrCodeModal" preset="card" :style="modalStyle" title="Share Chat QR Code">
             <div class="qr-code-modal-content">
                 <n-qr-code :value="`${BASE_URL}/chat/${props.code}`" :size="qrCodeSize" :padding="0.5"
-                    icon-src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHhtbG5zOnhsaW5rPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5L3hsaW5rIiB2aWV3Qm94PSIwIDAgNTEyIDUxMiI+PHBhdGggZD0iTTE5NC44MiA0OTZhMTguMzYgMTguMzYgMCAwIDEtMTguMS0yMS41M3YtLjExTDIwNC44MyAzMjBIOTZhMTYgMTYgMCAwIDEtMTIuNDQtMjYuMDZMMzAyLjczIDIzYTE4LjQ1IDE4LjQ1IDAgMCAxIDMyLjggMTMuNzFjMCAuMy0uMDguNTktLjEzLjg5TDMwNy4xOSAxOTJINDE2YTE2IDE2IDAgMCAxIDEyLjQ0IDI2LjA2TDIwOS4yNCA0ODlhMTguNDUgMTguNDUgMCAwIDEtMTQuNDIgN3oiIGZpbGw9ImN1cnJlbnRDb2xvciI+PC9wYXRoPjwvc3ZnPg=="
-                    :icon-size="qrCodeSize * 0.44" error-correction-level="Q" id="qrcode-canvas" />
+                    error-correction-level="Q" id="qrcode-canvas" />
 
                 <n-button type="primary" @click="downloadQrCode">
                     <template #icon>
