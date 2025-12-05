@@ -72,6 +72,10 @@ export interface MessageConfirmPayload {
   timestamp: number
 }
 
+export interface TokenUpdatePayload {
+  token: string
+}
+
 export type UserEventType = 'USER_JOINED' | 'USER_LEFT'
 
 export type MessageType =
@@ -81,6 +85,7 @@ export type MessageType =
   | 'USER_JOINED'
   | 'USER_LEFT'
   | 'ERROR'
+  | 'TOKEN_UPDATE'
 
 export interface ServerMessage {
   id: string
@@ -89,7 +94,13 @@ export interface ServerMessage {
   sender: User
   timestamp: number
   tempID?: string
-  payload: TextPayload | UserEventPayload | ErrorPayload | InitDataPayload | MessageConfirmPayload
+  payload:
+    | TextPayload
+    | UserEventPayload
+    | ErrorPayload
+    | InitDataPayload
+    | MessageConfirmPayload
+    | TokenUpdatePayload
 }
 
 export type OutboundMessageType = 'TEXT'

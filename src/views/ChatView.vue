@@ -58,7 +58,7 @@ import { ref, onMounted, computed, onUnmounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { NCard, useMessage } from 'naive-ui';
 import type { User } from '@/types/user';
-import type { UserMessage, SystemMessage, ClientMessage, SystemStyleType, ServerMessage, ErrorPayload, InitDataPayload, UserEventPayload, MessageConfirmPayload, TextPayload, OutboundMessage } from '@/types/chat';
+import type { UserMessage, SystemMessage, TokenUpdatePayload, ClientMessage, SystemStyleType, ServerMessage, ErrorPayload, InitDataPayload, UserEventPayload, MessageConfirmPayload, TextPayload, OutboundMessage } from '@/types/chat';
 import { generateTempID } from '@/utils/idGenerator';
 import { joinChat } from '@/services/chat';
 import { useGuestStore } from '@/stores/guest';
@@ -269,6 +269,13 @@ const handleACKMessage = (message: ServerMessage) => {
   }
 }
 
+const handleTokenUpdateMessage = (message: ServerMessage) => {
+  const tokenPayload = message.payload as TokenUpdatePayload;
+  const newToken = tokenPayload.token;
+
+  chatToken.value = newToken;
+};
+
 const handleWsConnected = () => {
   if (!hasSystemMessageShown.value) {
     addNewSystemMessage({
@@ -323,6 +330,11 @@ const handleWSMessage = (event: MessageEvent) => {
 
     case 'MSG_CONFIRM': {
       handleACKMessage(serverMsg);
+      break;
+    }
+
+    case 'TOKEN_UPDATE': {
+      handleTokenUpdateMessage(serverMsg);
       break;
     }
 
