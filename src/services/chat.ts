@@ -2,7 +2,7 @@
 // Chat session API service module.
 //
 
-import { get, post, RequestError } from '@/utils/request'
+import { post, RequestError } from '@/utils/request'
 import type { ChatType } from '@/types/chat'
 
 interface CreateChatResponse {
@@ -11,7 +11,7 @@ interface CreateChatResponse {
 
 export async function createChat(type: ChatType): Promise<CreateChatResponse> {
   const data = {
-    type: type,
+    type,
   }
 
   const url = '/chat/create'
@@ -31,20 +31,25 @@ export async function createChat(type: ChatType): Promise<CreateChatResponse> {
   }
 }
 
-interface CheckChatStatusResponse {
-  canJoin: boolean
+interface JoinChatResponse {
+  token: string
 }
 
-export async function checkChatStatus(chatCode: string): Promise<CheckChatStatusResponse> {
-  const url = `/chat/${chatCode}/check`
+export async function joinChat(code: string, guestID: string): Promise<JoinChatResponse> {
+  const url = `/chat/join`
+
+  const data = {
+    code,
+    guestID,
+  }
 
   try {
-    const responseData = await get<CheckChatStatusResponse>(url)
+    const responseData = await post<JoinChatResponse>(url, data)
     return responseData
   } catch (error) {
     if (error instanceof RequestError) {
       throw error
     }
-    throw new RequestError('Failed to connect to the server for chat check.')
+    throw new RequestError('Failed to join chat session.')
   }
 }

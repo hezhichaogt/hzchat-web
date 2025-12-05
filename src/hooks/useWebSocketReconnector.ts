@@ -1,28 +1,50 @@
 //
 // WebSocket connection management Hook that implements an automatic reconnection
 // mechanism with an exponential backoff strategy for stability and fault tolerance.
+// This hook handles connection state, retries, and specific close codes.
 //
 
 import { ref, onUnmounted, type Ref, computed } from 'vue'
 import type { ConnectionStatus, OutboundMessage } from '@/types/chat'
 import { useMessage } from 'naive-ui'
 
+// Maximum number of standard reconnection attempts before giving up.
 const MAX_RETRIES = 8
+
+// Initial delay (in ms) before the first reconnection attempt.
 const INITIAL_DELAY_MS = 1000
+
+// Maximum delay (in ms) allowed between any two reconnection attempts.
 const MAX_DELAY_MS = 30000
+
+// Factor used to increase the delay time.
 const BACKOFF_FACTOR = 2
+
+// Standard WebSocket close codes indicating a normal or expected closure.
 const NORMAL_CLOSE_CODES = [1000, 1001]
+
+// Standard WebSocket close code for abnormal closure.
 const ABNORMAL_CLOSE_CODE = 1006
+
+// Maximum number of consecutive abnormal closures (1006) allowed before triggering a long delay.
 const MAX_ABNORMAL_CLOSES = 3
+
+// The delay (in ms) applied after multiple abnormal closures.
 const RATE_LIMIT_DELAY_MS = 3 * 60 * 1000
+
+// Custom close code used by the server to indicate the user session was kicked.
 const WS_CLOSE_CODE_SESSION_KICKED = 4001
 
 interface WebSocketOptions {
+  // Reactive reference to the WebSocket URL. If null, connection will not start.
   wsUrl: Ref<string | null>
+  // Callback function executed when a message is received from the server.
   onMessage: (event: MessageEvent) => void
+  // Callback function executed upon successful connection establishment.
   onConnected: () => void
 }
 
+// Manages WebSocket connection, automatic reconnection, and state.
 export function useWebSocketReconnector({ wsUrl, onMessage, onConnected }: WebSocketOptions) {
   const message = useMessage()
 
@@ -35,13 +57,16 @@ export function useWebSocketReconnector({ wsUrl, onMessage, onConnected }: WebSo
 
   const abnormalCloseCount = ref(0)
 
+  // Flag to track if the WebSocket has ever successfully connected.
   const hasConnectedEver = ref(false)
 
+  // Calculates the exponential backoff delay time for the given attempt number.
   const calculateDelay = (attempt: number): number => {
     const delay = INITIAL_DELAY_MS * BACKOFF_FACTOR ** attempt
     return Math.min(delay, MAX_DELAY_MS)
   }
 
+  // Attempts to establish a new WebSocket connection.
   const initiateConnection = () => {
     if (!wsUrl.value) {
       connectStatus.value = 'FATAL_ERROR'
@@ -72,6 +97,7 @@ export function useWebSocketReconnector({ wsUrl, onMessage, onConnected }: WebSo
     }
   }
 
+  // Handler for WebSocket 'open' event.
   const handleWsOpen = () => {
     connectStatus.value = 'CONNECTED'
     retryCount.value = 0
@@ -80,6 +106,7 @@ export function useWebSocketReconnector({ wsUrl, onMessage, onConnected }: WebSo
     onConnected()
   }
 
+  // Handler for WebSocket 'close' event.
   const handleWsClose = (event: CloseEvent) => {
     console.warn(`WebSocket closed: Code ${event.code}, Reason: ${event.reason}`)
 
@@ -112,11 +139,13 @@ export function useWebSocketReconnector({ wsUrl, onMessage, onConnected }: WebSo
     startReconnectLoop()
   }
 
+  // Handler for WebSocket 'error' event.
   const handleWsError = (error: Event) => {
     console.error('WebSocket error:', error)
     wsRef.value?.close(4000, 'Error occurred, attempting reconnect.')
   }
 
+  // Clears any pending reconnection timeout timer.
   const clearReconnectTimer = () => {
     if (reconnectTimer !== null) {
       clearTimeout(reconnectTimer)
@@ -124,6 +153,7 @@ export function useWebSocketReconnector({ wsUrl, onMessage, onConnected }: WebSo
     }
   }
 
+  // Starts a long, fixed delay loop, typically triggered after persistent abnormal failures.
   const startLongDelayLoop = () => {
     clearReconnectTimer()
     abnormalCloseCount.value = 0
@@ -136,6 +166,7 @@ export function useWebSocketReconnector({ wsUrl, onMessage, onConnected }: WebSo
     }, RATE_LIMIT_DELAY_MS) as unknown as number
   }
 
+  // Starts the exponential backoff reconnection loop.
   const startReconnectLoop = () => {
     clearReconnectTimer()
 
@@ -154,6 +185,7 @@ export function useWebSocketReconnector({ wsUrl, onMessage, onConnected }: WebSo
     }, delay) as unknown as number
   }
 
+  // Sends data over the WebSocket connection.
   const sendData = (data: OutboundMessage) => {
     if (wsRef.value && wsRef.value.readyState === WebSocket.OPEN) {
       try {
@@ -167,6 +199,7 @@ export function useWebSocketReconnector({ wsUrl, onMessage, onConnected }: WebSo
     return false
   }
 
+  // Manually closes the WebSocket connection and prevents automatic reconnection.
   const closeConnectionByUser = () => {
     isUserClose = true
 
@@ -179,6 +212,7 @@ export function useWebSocketReconnector({ wsUrl, onMessage, onConnected }: WebSo
     wsRef.value = null
   }
 
+  // Lifecycle hook: Ensure cleanup when the component using the hook is unmounted.
   onUnmounted(() => {
     clearReconnectTimer()
     if (wsRef.value) {

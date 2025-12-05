@@ -60,7 +60,7 @@ import { NCard, useMessage } from 'naive-ui';
 import type { User } from '@/types/user';
 import type { UserMessage, SystemMessage, ClientMessage, SystemStyleType, ServerMessage, ErrorPayload, InitDataPayload, UserEventPayload, MessageConfirmPayload, TextPayload, OutboundMessage } from '@/types/chat';
 import { generateTempID } from '@/utils/idGenerator';
-import { checkChatStatus } from '@/services/chat';
+import { joinChat } from '@/services/chat';
 import { useGuestStore } from '@/stores/guest';
 import { useWebSocketReconnector } from '@/hooks/useWebSocketReconnector';
 import FatalErrorPage from '@/components/chat/FatalErrorPage.vue';
@@ -81,6 +81,7 @@ const userID = guestStore.guestID;
 const nickname = guestStore.getDisplayName;
 
 const chatCode = ref<string | null>(null);
+const chatToken = ref<string | null>(null);
 const maxUsers = ref<number>(0);
 const currentUser = ref<User | null>(null);
 const onlineUsers = ref<User[]>([]);
@@ -158,10 +159,10 @@ useHead({
 const WS_BASE_URL = import.meta.env.VITE_WS_BASE_URL;
 
 const wsUrl = computed(() => {
-  if (!chatCode.value) return null;
+  if (!chatCode.value || !chatToken.value) return null;
 
   const params = new URLSearchParams();
-  params.append('uid', userID);
+  params.append('token', chatToken.value!);
   params.append('nn', nickname);
 
   return `${WS_BASE_URL}/${chatCode.value}?${params.toString()}`;
@@ -426,41 +427,42 @@ const handleLeaveChat = () => {
   router.replace({ name: 'Home' });
 };
 
-const doCheck = async () => {
-  if (!chatCode.value) {
-    connectStatus.value = 'FATAL_ERROR';
-    return null;
-  }
+// Fetch or re-authenticate to get a valid chat token
+const getValidToken = async (code: string): Promise<string | null> => {
+  const tokenFromState = window.history.state.token as string;
+
+  if (tokenFromState) return tokenFromState;
 
   try {
-    const checkResult = await checkChatStatus(chatCode.value);
-    return checkResult;
-  } catch (e) {
-    connectStatus.value = 'FATAL_ERROR';
+    const joinResult = await joinChat(code, userID);
+    window.history.replaceState({ token: joinResult.token }, '');
+    return joinResult.token;
+
+  } catch (error) {
     return null;
   }
-}
+};
 
-const initConnection = async () => {
-  const checkResult = await doCheck();
-  if (!checkResult || !checkResult.canJoin) {
-    return;
-  }
-
-  initiateConnection();
-}
-
-onMounted(() => {
+onMounted(async () => {
   window.addEventListener('resize', handleResize);
 
   const code = route.params.code as string;
+  if (!code) {
+    connectStatus.value = 'FATAL_ERROR';
+    return;
+  }
+
   chatCode.value = code;
 
-  if (chatCode.value) {
-    initConnection();
-  } else {
+  const token = await getValidToken(code);
+  if (!token) {
     connectStatus.value = 'FATAL_ERROR';
+    return;
   }
+
+  chatToken.value = token;
+
+  initiateConnection();
 });
 
 onUnmounted(() => {

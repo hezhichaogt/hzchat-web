@@ -76,7 +76,7 @@ import { useMessage, NFlex, NH1, NText, NDivider, NInputGroup, NCard, NInput, NI
 import { ChatboxOutline, PeopleOutline, LogInOutline } from '@vicons/ionicons5';
 import type { ChatType } from '@/types/chat';
 import { useGuestStore } from '@/stores/guest';
-import { createChat, checkChatStatus } from '@/services/chat';
+import { createChat, joinChat } from '@/services/chat';
 import { useHead } from '@unhead/vue';
 
 //
@@ -95,6 +95,7 @@ const message = useMessage();
 const router = useRouter();
 const guestStore = useGuestStore();
 
+const userID = guestStore.guestID;
 const { nickname, getDisplayName } = storeToRefs(guestStore);
 const { setNickname } = guestStore;
 const nicknameInput = ref(nickname.value || '');
@@ -181,8 +182,14 @@ const handleJoinChat = async () => {
   isBusy.value = true;
 
   try {
-    const checkResult = await checkChatStatus(trimmedCode);
-    if (checkResult.canJoin) router.push(`/chat/${trimmedCode}`);
+    const joinResult = await joinChat(trimmedCode, userID);
+
+    if (!joinResult.token) message.error(`Failed to join chat: No access token received.`);
+
+    router.push({
+      path: `/chat/${trimmedCode}`,
+      state: { token: joinResult.token }
+    });
 
   } catch (error) {
     let displayMessage = 'An unknown error occurred.';
