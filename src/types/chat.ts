@@ -3,6 +3,7 @@
 //
 
 import type { User } from './user'
+import type { Attachment } from './file'
 
 export type ChatType = 'private' | 'group'
 
@@ -26,15 +27,13 @@ interface BaseMessage {
   tempID?: string
 }
 
-export type UserContentType = 'text' | 'image'
-
 export interface UserMessage extends BaseMessage {
   messageType: 'user'
   sender: User
   isOwn: boolean
   content: string
-  contentType: UserContentType
   status: MessageStatus
+  attachments?: Attachment[]
 }
 
 export type SystemStyleType = 'default' | 'error'
@@ -76,6 +75,11 @@ export interface TokenUpdatePayload {
   token: string
 }
 
+export interface AttachmentsPayload {
+  description?: string
+  attachments: Attachment[]
+}
+
 export type UserEventType = 'USER_JOINED' | 'USER_LEFT'
 
 export type MessageType =
@@ -86,6 +90,7 @@ export type MessageType =
   | 'USER_LEFT'
   | 'ERROR'
   | 'TOKEN_UPDATE'
+  | 'ATTACHMENTS'
 
 export interface ServerMessage {
   id: string
@@ -101,14 +106,15 @@ export interface ServerMessage {
     | InitDataPayload
     | MessageConfirmPayload
     | TokenUpdatePayload
+    | AttachmentsPayload
 }
 
-export type OutboundMessageType = 'TEXT'
+export type OutboundMessageType = 'TEXT' | 'ATTACHMENTS'
 
 export interface OutboundMessage {
   type: OutboundMessageType
   tempID?: string
-  payload: TextPayload
+  payload: TextPayload | AttachmentsPayload
 }
 
 export type MessageStatus = 'sending' | 'sent' | 'failed'

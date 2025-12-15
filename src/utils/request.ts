@@ -2,6 +2,8 @@
 // Core network request utility module.
 //
 
+import { useTokenStore } from '@/stores/token'
+
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
 
 if (!API_BASE_URL) {
@@ -39,6 +41,12 @@ async function request(url: string, options: RequestOptions = {}) {
       ...defaultHeaders,
       ...options.headers,
     },
+  }
+
+  const tokenStore = useTokenStore()
+  const token = tokenStore.getToken
+  if (token) {
+    ;(finalOptions.headers as Record<string, string>)['Authorization'] = `Bearer ${token}`
   }
 
   if (finalOptions.method === 'POST' || finalOptions.method === 'PUT') {

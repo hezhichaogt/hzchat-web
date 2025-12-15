@@ -22,7 +22,9 @@
           </n-card>
 
           <div class="input-section">
-            <ChatInput @send="handleSendMessage" :disabled="!isReady" />
+            <ChatInput ref="chatInputRef" @send="handleSendMessage" :disabled="!isReady"
+              @upload-start="handleUploadStart" @file-removed="handleFileRemoved" :files="filesToUpload"
+              :max-files="MAX_FILE_COUNT" />
           </div>
         </div>
 
@@ -58,10 +60,14 @@ import { ref, onMounted, computed, onUnmounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { NCard, useMessage } from 'naive-ui';
 import type { User } from '@/types/user';
-import type { UserMessage, SystemMessage, TokenUpdatePayload, ClientMessage, SystemStyleType, ServerMessage, ErrorPayload, InitDataPayload, UserEventPayload, MessageConfirmPayload, TextPayload, OutboundMessage } from '@/types/chat';
+import type { UserMessage, SystemMessage, TokenUpdatePayload, ClientMessage, SystemStyleType, ServerMessage, ErrorPayload, InitDataPayload, UserEventPayload, MessageConfirmPayload, TextPayload, OutboundMessage, AttachmentsPayload } from '@/types/chat';
+import type { UploadAttachment, Attachment } from '@/types/file';
 import { generateTempID } from '@/utils/idGenerator';
+import { putFile } from '@/utils/fileUpload';
 import { joinChat } from '@/services/chat';
+import { presignUpload } from '@/services/file';
 import { useGuestStore } from '@/stores/guest';
+import { useTokenStore } from '@/stores/token';
 import { useWebSocketReconnector } from '@/hooks/useWebSocketReconnector';
 import FatalErrorPage from '@/components/chat/FatalErrorPage.vue';
 import LoadingPage from '@/components/chat/LoadingPage.vue';
@@ -71,25 +77,31 @@ import InfoHeader from '@/components/chat/InfoHeader.vue';
 import Users from '@/components/chat/Users.vue';
 import ChatInput from '@/components/chat/ChatInput.vue';
 import { useHead } from '@unhead/vue';
+import imageCompression from 'browser-image-compression';
 
 const route = useRoute();
 const router = useRouter();
 const message = useMessage();
 const guestStore = useGuestStore();
+const tokenStore = useTokenStore();
 
 const userID = guestStore.guestID;
 const nickname = guestStore.getDisplayName;
 
+const ACK_TIMEOUT_MS = 5000;
+
 const chatCode = ref<string | null>(null);
-const chatToken = ref<string | null>(null);
 const maxUsers = ref<number>(0);
 const currentUser = ref<User | null>(null);
 const onlineUsers = ref<User[]>([]);
 const messages = ref<ClientMessage[]>([]);
-const ACK_TIMEOUT_MS = 5000;
 const ackTimers = new Map<string, number>();
-
 const hasSystemMessageShown = ref(false);
+
+interface ChatInputExpose {
+  clearInput: () => void;
+}
+const chatInputRef = ref<ChatInputExpose | null>(null);
 
 const MOBILE_BREAKPOINT = 768;
 const isMobile = ref(window.innerWidth < MOBILE_BREAKPOINT);
@@ -97,9 +109,6 @@ const handleResize = () => {
   isMobile.value = window.innerWidth < MOBILE_BREAKPOINT;
 };
 
-//
-// SEO
-//
 const dynamicTitle = computed(() => {
   if (chatCode.value) {
     return `Chat ${chatCode.value}`;
@@ -159,10 +168,11 @@ useHead({
 const WS_BASE_URL = import.meta.env.VITE_WS_BASE_URL;
 
 const wsUrl = computed(() => {
-  if (!chatCode.value || !chatToken.value) return null;
+  const currentToken = tokenStore.token;
+  if (!chatCode.value || !currentToken) return null;
 
   const params = new URLSearchParams();
-  params.append('token', chatToken.value!);
+  params.append('token', currentToken);
   params.append('nn', nickname);
 
   return `${WS_BASE_URL}/${chatCode.value}?${params.toString()}`;
@@ -230,7 +240,6 @@ const handleTextMessage = (message: ServerMessage) => {
     sender: message.sender,
     isOwn: isOwn,
     content: payload.content,
-    contentType: 'text',
   } as UserMessage);
 }
 
@@ -273,8 +282,27 @@ const handleTokenUpdateMessage = (message: ServerMessage) => {
   const tokenPayload = message.payload as TokenUpdatePayload;
   const newToken = tokenPayload.token;
 
-  chatToken.value = newToken;
+  tokenStore.setToken(newToken);
 };
+
+const handleAttachmentMessage = (message: ServerMessage) => {
+  if (messages.value.some(m => m.id === message.id)) {
+    return;
+  }
+
+  const isOwn = message.sender.id === currentUser.value?.id;
+  const payload = message.payload as AttachmentsPayload;
+
+  messages.value.push({
+    id: message.id,
+    timestamp: message.timestamp,
+    messageType: 'user',
+    sender: message.sender,
+    isOwn: isOwn,
+    content: payload.description || '',
+    attachments: payload.attachments,
+  } as UserMessage);
+}
 
 const handleWsConnected = () => {
   if (!hasSystemMessageShown.value) {
@@ -338,6 +366,11 @@ const handleWSMessage = (event: MessageEvent) => {
       break;
     }
 
+    case 'ATTACHMENTS': {
+      handleAttachmentMessage(serverMsg);
+      break;
+    }
+
     default:
       console.warn(`Received unknown message type: ${serverMsg.type}`, serverMsg);
       break;
@@ -357,9 +390,50 @@ const {
   onConnected: handleWsConnected,
 });
 
-const handleSendMessage = (content: string) => {
+const handleSendMessage = (content: string, attachmentsToResend?: Attachment[]) => {
   if (!isReady.value) {
     message.warning(`Connection status is: ${connectStatus.value}. Cannot send.`);
+    return;
+  }
+
+  if (!attachmentsToResend) {
+    const ongoingUploads = filesToUpload.value.filter(f =>
+      f.status === 'uploading' || f.status === 'pending'
+    );
+
+    if (ongoingUploads.length > 0) {
+      message.warning(`${ongoingUploads.length} files are still uploading. Please wait.`);
+      return;
+    }
+
+    const failedUploads = filesToUpload.value.filter(f => f.status === 'failed');
+
+    if (failedUploads.length > 0) {
+      message.error(`${failedUploads.length} files failed to upload. Please remove or retry.`);
+      return;
+    }
+  }
+
+  let finalAttachments: Attachment[] = [];
+
+  if (attachmentsToResend && attachmentsToResend.length > 0) {
+    finalAttachments = attachmentsToResend;
+
+  } else {
+    finalAttachments = filesToUpload.value
+      .filter(f => f.status === 'success' && f.fileKey)
+      .map(f => ({
+        fileKey: f.fileKey!,
+        fileName: f.fileName,
+        mimeType: f.mimeType,
+        fileSize: f.fileSize,
+      }));
+  }
+
+  const trimmedContent = content.trim();
+  const hasAttachments = finalAttachments.length > 0;
+
+  if (!trimmedContent && !hasAttachments) {
     return;
   }
 
@@ -372,34 +446,154 @@ const handleSendMessage = (content: string) => {
     messageType: 'user',
     sender: currentUser.value!,
     isOwn: true,
-    content: content,
-    contentType: 'text',
+    content: trimmedContent,
     tempID: tempId,
     status: 'sending',
+    attachments: hasAttachments ? finalAttachments : undefined,
   };
 
   messages.value.push(tempMessage as ClientMessage);
 
-  const outboundMessage: OutboundMessage = {
-    type: "TEXT",
-    tempID: tempId,
-    payload: { content: content }
+  let outboundMessage: OutboundMessage;
+
+  if (hasAttachments) {
+    const payload: AttachmentsPayload = {
+      description: trimmedContent || undefined,
+      attachments: finalAttachments,
+    };
+
+    outboundMessage = {
+      type: "ATTACHMENTS",
+      tempID: tempId,
+      payload: payload as AttachmentsPayload
+    };
+
+  } else {
+    outboundMessage = {
+      type: "TEXT",
+      tempID: tempId,
+      payload: { content: trimmedContent } as TextPayload
+    };
   }
 
   const sent = sendData(outboundMessage);
 
   if (sent) {
+
+    if (!attachmentsToResend) {
+      filesToUpload.value = [];
+      chatInputRef.value?.clearInput();
+    }
+
     const timerId = setTimeout(() => {
       handleAckTimeout(tempId);
     }, ACK_TIMEOUT_MS);
 
     ackTimers.set(tempId, timerId as unknown as number);
+
   } else {
     const timerId = ackTimers.get(tempId);
+
     if (timerId !== undefined) {
       clearTimeout(timerId);
     }
+
     handleAckTimeout(tempId);
+  }
+};
+
+const MAX_FILE_COUNT = 3;
+const filesToUpload = ref<UploadAttachment[]>([]);
+
+const updateFileInArray = (updatedFile: UploadAttachment) => {
+  filesToUpload.value = filesToUpload.value.map(f => {
+    return f.id === updatedFile.id ? updatedFile : f;
+  });
+};
+
+const uploadFile = async (file: UploadAttachment): Promise<UploadAttachment> => {
+  let currentFile = { ...file };
+  let fileToUpload: File = file.originFile;
+
+  const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024;
+
+  try {
+
+    if (file.mimeType.startsWith('image/') && file.mimeType !== 'image/gif') {
+      const options = {
+        maxSizeMB: 4.8,
+        maxWidthOrHeight: 1920,
+        initialQuality: 0.8,
+        fileType: 'image/webp',
+        useWebWorker: true,
+      };
+
+      const compressedFile = await imageCompression(file.originFile, options);
+
+      if (compressedFile.size < file.fileSize) {
+        const newFileName = file.fileName.replace(/\.[^/.]+$/, "") + '.webp';
+        const compressedFileAsFile = new File(
+          [compressedFile],
+          newFileName,
+          { type: compressedFile.type }
+        );
+
+        fileToUpload = compressedFileAsFile;
+        currentFile.fileSize = compressedFileAsFile.size;
+        currentFile.mimeType = compressedFileAsFile.type;
+        currentFile.fileName = newFileName;
+      }
+    }
+
+    if (fileToUpload.size > MAX_FILE_SIZE_BYTES) {
+      throw new Error(`File size exceeds the maximum limit of 5 MB.`);
+    }
+
+    const presignData = await presignUpload(currentFile.fileName, currentFile.mimeType, currentFile.fileSize);
+    const { presignedUrl, fileKey, fileName } = presignData;
+
+    await putFile(presignedUrl, fileToUpload);
+
+    return {
+      ...currentFile,
+      status: 'success' as const,
+      fileKey: fileKey,
+      fileName: fileName,
+    };
+
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    message.error(`file upload error: ${errorMessage}`);
+
+    return {
+      ...currentFile,
+      status: 'failed' as const,
+    };
+  }
+}
+
+const handleUploadStart = (newFiles: UploadAttachment[]) => {
+  if (filesToUpload.value.length + newFiles.length > MAX_FILE_COUNT) {
+    message.warning(`Maximum of ${MAX_FILE_COUNT} files are allowed.`);
+    newFiles.forEach(f => URL.revokeObjectURL(f.previewUrl));
+    return;
+  }
+
+  filesToUpload.value.push(...newFiles);
+
+  newFiles.forEach(file => {
+    updateFileInArray({ ...file, status: 'uploading' as const });
+    uploadFile(file).then(updatedFile => {
+      updateFileInArray(updatedFile);
+    });
+  });
+};
+
+const handleFileRemoved = (fileId: string) => {
+  const index = filesToUpload.value.findIndex(f => f.id === fileId);
+
+  if (index !== -1) {
+    filesToUpload.value.splice(index, 1);
   }
 };
 
@@ -410,6 +604,7 @@ const handleResendMessage = (failedMessage: UserMessage) => {
   }
 
   const index = messages.value.findIndex(m => m.tempID === failedMessage.tempID);
+
   if (index !== -1) {
     const originalMessage = messages.value[index] as UserMessage;
 
@@ -422,7 +617,7 @@ const handleResendMessage = (failedMessage: UserMessage) => {
     messages.value.splice(index, 1);
   }
 
-  handleSendMessage(failedMessage.content);
+  handleSendMessage(failedMessage.content, failedMessage.attachments);
 };
 
 const handleLeaveChat = () => {
@@ -430,25 +625,35 @@ const handleLeaveChat = () => {
 
   messages.value = [];
   onlineUsers.value = [];
+  hasSystemMessageShown.value = false;
 
   ackTimers.forEach(timerId => clearTimeout(timerId));
   ackTimers.clear();
 
-  hasSystemMessageShown.value = false;
+  filesToUpload.value.forEach(f => {
+    if (f.previewUrl) {
+      URL.revokeObjectURL(f.previewUrl);
+    }
+  });
+  filesToUpload.value = [];
 
   router.replace({ name: 'Home' });
 };
 
-// Fetch or re-authenticate to get a valid chat token
 const getValidToken = async (code: string): Promise<string | null> => {
   const tokenFromState = window.history.state.token as string;
 
-  if (tokenFromState) return tokenFromState;
+  if (tokenFromState) {
+    tokenStore.setToken(tokenFromState);
+    return tokenFromState;
+  }
 
   try {
     const joinResult = await joinChat(code, userID);
-    window.history.replaceState({ token: joinResult.token }, '');
-    return joinResult.token;
+    const newToken = joinResult.token;
+    window.history.replaceState({ token: newToken }, '');
+    tokenStore.setToken(newToken);
+    return newToken;
 
   } catch (error) {
     return null;
@@ -471,8 +676,6 @@ onMounted(async () => {
     connectStatus.value = 'FATAL_ERROR';
     return;
   }
-
-  chatToken.value = token;
 
   initiateConnection();
 });

@@ -12,9 +12,29 @@
                 </n-text>
 
                 <div :class="['message-bubble', message.isOwn ? 'bubble-own' : 'bubble-other']">
-                    <div>
+
+                    <div v-if="isAttachments" class="attachment-area">
+                        <div v-for="attachment in displayAttachments" :key="attachment.fileKey" class="attachment-card">
+
+                            <div class="image-wrapper">
+                                <n-image v-if="attachment.mimeType.startsWith('image/')" :src="attachment.url"
+                                    :alt="attachment.fileName" class="preview-image" object-fit="cover"
+                                    :show-toolbar="false" />
+
+                                <div v-else class="file-icon-placeholder">
+                                    <n-icon :size="40">
+                                        <DocumentOutline />
+                                    </n-icon>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+
+                    <div v-if="message.content.trim()" class="message-text-content">
                         {{ message.content }}
                     </div>
+
                     <div class="message-time">
                         <span v-if="shouldShowJustNow">
                             Just now
@@ -46,9 +66,11 @@
 //
 
 import { computed } from 'vue';
-import { useThemeVars, NText, NTime, NIcon } from 'naive-ui';
+import { useThemeVars, NText, NTime, NIcon, NImage } from 'naive-ui';
 import type { UserMessage } from '@/types/chat';
-import { RefreshOutline, SyncOutline } from '@vicons/ionicons5';
+import type { Attachment } from '@/types/file';
+import { useTokenStore } from '@/stores/token'
+import { RefreshOutline, SyncOutline, DocumentOutline } from '@vicons/ionicons5';
 import UserAvatar from '../UserAvatar.vue';
 
 const props = defineProps<{
@@ -57,7 +79,35 @@ const props = defineProps<{
     currentTime: number;
 }>();
 
+const tokenStore = useTokenStore();
+
+const isAttachments = computed(() => !!props.message.attachments && props.message.attachments.length > 0);
+
+const VITE_API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
+interface DisplayAttachment extends Attachment {
+    url: string;
+}
+
+const displayAttachments = computed<DisplayAttachment[]>(() => {
+    const tokenValue = tokenStore.getToken;
+
+    if (!isAttachments.value || !tokenValue) return [];
+
+    return props.message.attachments!
+        .filter(a => a.mimeType.startsWith('image/'))
+        .map(a => {
+            const presignUrl = `${VITE_API_BASE_URL}/file/presign-download?k=${encodeURIComponent(a.fileKey)}&t=${encodeURIComponent(tokenValue)}`;
+
+            return {
+                ...a,
+                url: presignUrl
+            };
+        });
+});
+
 const isPending = computed(() => props.message.isOwn && props.message.status === 'sending');
+
 const isFailed = computed(() => props.message.isOwn && props.message.status === 'failed');
 
 const handleResendClick = () => {
@@ -80,6 +130,7 @@ const otherBubbleBackgroundColor = computed(() => themeVars.value.buttonColor2);
 const primaryColor = computed(() => themeVars.value.primaryColor);
 const selfBubbleTextColor = computed(() => themeVars.value.baseColor);
 const errorColor = computed(() => themeVars.value.errorColor);
+const borderColor = computed(() => themeVars.value.borderColor);
 </script>
 
 <style scoped>
@@ -163,6 +214,10 @@ const errorColor = computed(() => themeVars.value.errorColor);
     border-top-left-radius: 4px;
 }
 
+.message-text-content {
+    white-space: pre-wrap;
+}
+
 .message-content {
     font-size: 0.875rem;
 }
@@ -172,6 +227,51 @@ const errorColor = computed(() => themeVars.value.errorColor);
     font-size: 10px;
     font-weight: 500;
     opacity: 0.7;
+}
+
+.attachment-area {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.attachment-card {
+    width: 100px;
+    height: 100px;
+    border: 1px solid v-bind(borderColor);
+    border-radius: 12px;
+    overflow: hidden;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background-color: v-bind(selfBubbleTextColor);
+}
+
+.image-wrapper {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.preview-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.file-icon-placeholder {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    height: 100%;
+    color: var(--n-text-color-3);
+    background-color: var(--n-color-target);
 }
 
 @keyframes spin {

@@ -2,7 +2,9 @@
     <div class="messages-container">
         <n-scrollbar ref="messageContainerRef" @scroll="handleScroll">
             <div ref="messagesWrapperRef" class="messages-wrapper">
-                <div v-for="msg in messages" :key="msg.id || msg.tempID">
+
+                <div v-for="(msg, index) in messages" :key="msg.id || msg.tempID"
+                    :ref="(el) => { if (index === messages.length - 1) lastMessageRef = el as HTMLElement | null; }">
 
                     <template v-if="msg.messageType === 'user'">
                         <UserMessageRow :message="(msg as UserMessage)" :on-resend="onResend"
@@ -45,19 +47,35 @@ const props = defineProps<{
 
 const messageContainerRef = ref<InstanceType<typeof NScrollbar> | null>(null);
 const messagesWrapperRef = ref<HTMLDivElement | null>(null);
-
+const lastMessageRef = ref<HTMLElement | null>(null);
 const isNearBottom = ref(true);
 
-const scrollToBottom = () => {
-    if (messageContainerRef.value && messagesWrapperRef.value) {
-        const contentHeight = messagesWrapperRef.value.scrollHeight;
+const waitForImagesToLoad = async (parentElement: HTMLElement): Promise<void> => {
+    if (!parentElement) return Promise.resolve();
+
+    const images = Array.from(parentElement.querySelectorAll('img')).filter(img => !img.complete);
+
+    if (images.length === 0) {
+        return Promise.resolve();
+    }
+
+    const promises = images.map(img => new Promise<void>((resolve) => {
+        img.onload = () => resolve();
+        img.onerror = () => resolve();
+    }));
+
+    await Promise.all(promises);
+};
+
+const scrollToNewMessage = () => {
+    if (messageContainerRef.value && lastMessageRef.value) {
+        const targetOffsetTop = lastMessageRef.value.offsetTop;
+
         setTimeout(() => {
-            if (messageContainerRef.value) {
-                messageContainerRef.value.scrollTo({
-                    top: contentHeight,
-                    behavior: 'smooth'
-                });
-            }
+            messageContainerRef.value!.scrollTo({
+                top: targetOffsetTop,
+                behavior: 'smooth',
+            });
         }, 0);
     }
 };
@@ -82,8 +100,12 @@ watch(() => props.messages.length, (newLength, oldLength) => {
         }
 
         if (shouldScroll) {
-            nextTick(() => {
-                scrollToBottom();
+            nextTick(async () => {
+                if (messagesWrapperRef.value) {
+                    await waitForImagesToLoad(messagesWrapperRef.value);
+                }
+
+                scrollToNewMessage();
             });
         }
     }
