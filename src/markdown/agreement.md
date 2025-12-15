@@ -1,8 +1,8 @@
-**Effective Date:** November 17, 2025
+**Effective Date:** December 15, 2025
 
 Welcome to HZ Chat! This Agreement is designed to clarify your rights and responsibilities when using our temporary chat service.
 
-**Important Note:** HZ Chat is an account-free, temporary service. All communication content is solely relayed in real-time by the server and is not persistently stored.
+**Important Note:** HZ Chat is an account-free, temporary service. Text message content is solely relayed in real-time by the server and is not persistently stored. File content is stored only temporarily for access.
 
 ---
 
@@ -20,13 +20,13 @@ This service is not designed for minors. Users who have not reached the age of l
 
 ### 2.1 Content Ownership and Temporary License
 
-You retain ownership of all content (including text and files) you post on HZ Chat. To enable the core functionality of the service (i.e., real-time relay and display of your messages), you hereby grant HZ Chat a **temporary, irrevocable, memory-based, royalty-free license** to relay and display your User Content.
+You retain ownership of all content (including text and files) you post on HZ Chat. To enable the core functionality of the service (i.e., real-time relay, display, temporary storage, and secure in-room access of your messages and attachments), you hereby grant HZ Chat a temporary, irrevocable, royalty-free license to relay, display, temporarily store, and securely enable in-room access to your User Content.
 
-**This license is valid only for the duration of the current session and shall immediately and automatically terminate upon session termination (i.e., 5 minutes after all users have left the room).**
+**This license is valid only for the duration of the current session for text messages; for file attachments, this license is valid for 24 hours after file upload. The license shall immediately and automatically terminate upon the expiration of the respective retention period.**
 
 ### 2.2 User Content Responsibility
 
-**HZ Chat does not actively review, store, or monitor User Content.** You understand and agree that you are solely responsible for all content that you send or share through this service.
+**HZ Chat does not actively review or monitor User Content.** Due to the nature of the service, we only temporarily store file content. You understand and agree that you are solely responsible for all content (including files) that you send or share through this service.
 
 ### 2.3 Prohibited Conduct
 
@@ -37,12 +37,16 @@ You commit that, when using the service, you will not send, transmit, or share a
 3.  Content that infringes upon the intellectual property or privacy rights of any third party.
 4.  Content that contains any form of malware, viruses, or other harmful code.
 
-### 2.4 Violation Enforcement
+### 2.4 File Attachments and Temporary Storage
+
+When you upload files as attachments, the file content is temporarily stored on an object storage service controlled by us. All uploaded files will be **automatically and permanently deleted within 24 hours**. You understand and agree that you are responsible for the legality and security of the file content and bear all risks arising from the file storage and auto-deletion mechanism.
+
+### 2.5 Violation Enforcement
 
 You acknowledge and agree that if HZ Chat receives notification of a user posting unlawful content, or detects any abusive behavior, the platform reserves the right to take the following actions without liability:
 
-1.  **Immediate Connection Interruption:** To immediately terminate your current WebSocket connection and session.
-2.  **Temporary Rate Limiting:** To implement temporary traffic limitations based on your temporary IP address, to prevent continued abusive behavior.
+1.   **Immediate Connection Interruption:** To immediately terminate your current WebSocket connection and session.
+2.   **Temporary Rate Limiting:** To implement temporary traffic limitations based on your temporary IP address, to prevent continued abusive behavior.
 
 You understand and agree that due to the account-free nature of this service, we cannot prevent you from rejoining with a new temporary identity, but the platform reserves the right to take repeated measures against all subsequent violations.
 

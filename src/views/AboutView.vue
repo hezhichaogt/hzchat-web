@@ -19,7 +19,11 @@
             <n-list hoverable>
                 <n-list-item>
                     <n-thing title="Instant Delivery, Memory Dispersal"
-                        description="Your messages are instant and temporary. Content is routed through server memory in real-time, discarded immediately after delivery, and is never written to persistent storage." />
+                        description="Your text messages are instant and temporary. Content is routed through server memory in real-time, discarded immediately after delivery, and is never written to persistent storage." />
+                </n-list-item>
+                <n-list-item>
+                    <n-thing title="File Attachments: 24-Hour Auto-Purge"
+                        description="While text messages are purely memory-based, file attachments are stored temporarily on a secure service and are automatically and permanently deleted within 24 hours of upload. We do not use this for long-term storage." />
                 </n-list-item>
                 <n-list-item>
                     <n-thing title="No Account Needed, Zero PII Collection"

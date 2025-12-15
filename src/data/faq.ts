@@ -27,7 +27,7 @@ const faqData: FAQGroup[] = [
       {
         name: 'prv-1',
         question: 'Q4: Does the platform store my chat history?',
-        answer: `HZ Chat's core promise is Zero Logging. All chat data is only routed through server memory in real-time and is never persisted to storage. We open-source our core code via the AGPL license to verify this commitment and ensure absolute transparency.`,
+        answer: `HZ Chat's core promise is Zero Logging. Text message data is only routed through server memory in real-time and is never persisted to storage. File attachments are temporarily stored on an object storage service controlled by us and are automatically and permanently deleted within 24 hours of upload. We open-source our core code via the AGPL license to verify this commitment.`,
       },
       {
         name: 'prv-2',
@@ -47,7 +47,7 @@ const faqData: FAQGroup[] = [
       {
         name: 'use-1',
         question: 'Q7: What rights do I have over the content I post on HZ Chat?',
-        answer: `You retain all ownership rights to the content you post. You grant HZ Chat only a temporary, in-memory license to route and display your message to the recipient(s). This license is only valid for the duration of the current session and is automatically terminated upon session end.`,
+        answer: `You retain all ownership rights to the content you post. You grant HZ Chat a temporary license to relay, display, temporarily store, and securely enable in-room access to your content. The license for text messages is valid for the duration of the session, and the license for file attachments is valid for 24 hours after upload.`,
       },
       {
         name: 'use-2',
@@ -72,7 +72,12 @@ const faqData: FAQGroup[] = [
       },
       {
         name: 'use-4',
-        question: 'Q10: How can I contact HZ Chat or report an issue?',
+        question: 'Q10: What file types are supported, and how does the platform handle my files?',
+        answer: `We currently support image types only, including JPG, PNG, WEBP, and GIF. All files are stored on a secure object storage service and are automatically and permanently deleted within 24 hours of successful upload. Please do not use this service for long-term file storage or backup.`,
+      },
+      {
+        name: 'use-5',
+        question: 'Q11: How can I contact HZ Chat or report an issue?',
         answer: `If you have any questions, comments, or suggestions regarding the service, including the Privacy Policy, User Agreement, or content reports, please contact us via email: privacy@hzclog.com.`,
       },
     ],
