@@ -66,8 +66,8 @@ import { generateTempID } from '@/utils/idGenerator';
 import { putFile } from '@/utils/fileUpload';
 import { joinChat } from '@/services/chat';
 import { presignUpload } from '@/services/file';
-import { useGuestStore } from '@/stores/guest';
-import { useTokenStore } from '@/stores/token';
+import { useUserStore } from '@/stores/user';
+import { useRoomStore } from '@/stores/room';
 import { useWebSocketReconnector } from '@/hooks/useWebSocketReconnector';
 import FatalErrorPage from '@/components/chat/FatalErrorPage.vue';
 import LoadingPage from '@/components/chat/LoadingPage.vue';
@@ -82,19 +82,15 @@ import imageCompression from 'browser-image-compression';
 const route = useRoute();
 const router = useRouter();
 const message = useMessage();
-const guestStore = useGuestStore();
-const tokenStore = useTokenStore();
-
-const userID = guestStore.guestID;
-const nickname = guestStore.getDisplayName;
-
-const ACK_TIMEOUT_MS = 5000;
+const userStore = useUserStore();
+const roomStore = useRoomStore();
 
 const chatCode = ref<string | null>(null);
 const maxUsers = ref<number>(0);
 const currentUser = ref<User | null>(null);
 const onlineUsers = ref<User[]>([]);
 const messages = ref<ClientMessage[]>([]);
+const ACK_TIMEOUT_MS = 5000;
 const ackTimers = new Map<string, number>();
 const hasSystemMessageShown = ref(false);
 
@@ -103,114 +99,105 @@ interface ChatInputExpose {
 }
 const chatInputRef = ref<ChatInputExpose | null>(null);
 
+//
+// Responsive design
+//
 const MOBILE_BREAKPOINT = 768;
 const isMobile = ref(window.innerWidth < MOBILE_BREAKPOINT);
 const handleResize = () => {
   isMobile.value = window.innerWidth < MOBILE_BREAKPOINT;
 };
 
-const dynamicTitle = computed(() => {
-  if (chatCode.value) {
-    return `Chat ${chatCode.value}`;
-  }
-  return 'Loading Chat...';
-});
-
+//
+// SEO
+//
+const dynamicTitle = computed(() =>
+  chatCode.value ? `Chat ${chatCode.value}` : 'Loading Chat...'
+);
 const BASE_URL = import.meta.env.VITE_BASE_URL || window.location.origin;
-const dynamicUrl = computed(() => {
-  if (chatCode.value) {
-    return `${BASE_URL}/chat/${chatCode.value}`;
-  }
-  return BASE_URL;
-});
-
+const dynamicUrl = computed(() =>
+  chatCode.value ? `${BASE_URL}/chat/${chatCode.value}` : BASE_URL
+);
 const dynamicDescription = computed(() => {
-  if (chatCode.value) {
-    return `Join Chat ${chatCode.value}! Create your temporary, zero-record room instantly. No trace, no burden.`;
-  }
-  return 'Create your temporary, zero-record chat room instantly. No trace, no burden.';
+  const baseDesc = 'Create your temporary, zero-record chat room instantly. No trace, no burden.';
+  return chatCode.value ? `Join Chat ${chatCode.value}! ${baseDesc}` : baseDesc;
 });
 
 useHead({
   title: dynamicTitle,
   meta: [
-    {
-      property: 'og:url',
-      content: dynamicUrl,
-    },
-    {
-      property: 'og:title',
-      content: dynamicTitle,
-    },
-    {
-      property: 'og:description',
-      content: dynamicDescription,
-    },
-    {
-      name: 'twitter:url',
-      content: dynamicUrl,
-    },
-    {
-      name: 'twitter:title',
-      content: dynamicTitle,
-    },
-    {
-      name: 'twitter:description',
-      content: dynamicDescription,
-    },
-    {
-      name: 'description',
-      content: dynamicDescription,
-    },
+    { name: 'description', content: dynamicDescription },
+    { property: 'og:url', content: dynamicUrl },
+    { property: 'og:title', content: dynamicTitle },
+    { property: 'og:description', content: dynamicDescription },
+    { name: 'twitter:card', content: 'summary_large_image' },
+    { name: 'twitter:url', content: dynamicUrl },
+    { name: 'twitter:title', content: dynamicTitle },
+    { name: 'twitter:description', content: dynamicDescription },
   ],
 });
 
+//
+// WebSocket
+//
 const WS_BASE_URL = import.meta.env.VITE_WS_BASE_URL;
 
 const wsUrl = computed(() => {
-  const currentToken = tokenStore.token;
+  const currentToken = roomStore.roomToken;
   if (!chatCode.value || !currentToken) return null;
-
-  const params = new URLSearchParams();
-  params.append('token', currentToken);
-  params.append('nn', nickname);
-
-  return `${WS_BASE_URL}/${chatCode.value}?${params.toString()}`;
+  return `${WS_BASE_URL}/${chatCode.value}?token=${currentToken}`;
 });
 
 const handleAckTimeout = (tempId: string) => {
-  ackTimers.delete(tempId);
+  const timerId = ackTimers.get(tempId);
 
-  const index = messages.value.findIndex(m => (m as UserMessage).tempID === tempId);
+  if (timerId !== undefined) {
+    clearTimeout(timerId);
+    ackTimers.delete(tempId);
+  }
+
+  const index = messages.value.findIndex(m =>
+    m.messageType === 'user' && (m as UserMessage).tempId === tempId
+  );
 
   if (index !== -1) {
-    (messages.value[index] as UserMessage).status = 'failed';
-    message.error('Message confirmation timed out. Please check connection and try again.');
+    const msg = messages.value[index] as UserMessage;
+    if (msg.status === 'sending') {
+      msg.status = 'failed';
+      message.error('Message confirmation timed out. Please try again.');
+    }
   }
 };
 
-const addNewSystemMessage = ({ id, timestamp, content, style = 'default' }: { id: string, timestamp: number, content: string, style?: SystemStyleType }) => {
+const addNewSystemMessage = ({ id, timestamp, content, style = 'default' }: {
+  id: string,
+  timestamp: number,
+  content: string,
+  style?: SystemStyleType
+}) => {
+  if (messages.value.some(m => m.id === id)) return;
+
   const newMessage: SystemMessage = {
-    id: id,
-    timestamp: timestamp,
+    id,
+    timestamp,
     messageType: "system",
-    content: content,
-    style: style,
+    content,
+    style,
   };
+
   messages.value.push(newMessage);
 };
 
-const handleUserEvent = (message: ServerMessage) => {
-  const eventType = message.type;
-  const payload = message.payload as UserEventPayload;
-  const eventUser = payload.user;
+const handleUserEvent = (msg: ServerMessage) => {
+  const { type: eventType, id, timestamp, payload } = msg;
+  const { user: eventUser } = payload as UserEventPayload;
+
+  if (!eventUser) return;
 
   if (eventType === 'USER_JOINED') {
-    const exists = onlineUsers.value.some(u => u.id === eventUser.id);
-    if (!exists) {
+    if (!onlineUsers.value.some(u => u.id === eventUser.id)) {
       onlineUsers.value.push(eventUser);
     }
-
   } else if (eventType === 'USER_LEFT') {
     onlineUsers.value = onlineUsers.value.filter(u => u.id !== eventUser.id);
   }
@@ -219,18 +206,15 @@ const handleUserEvent = (message: ServerMessage) => {
   const content = `${eventUser.nickname} has ${action} the chat.`;
 
   addNewSystemMessage({
-    id: message.id,
-    timestamp: message.timestamp,
-    content: content
+    id,
+    timestamp,
+    content
   });
 }
 
 const handleTextMessage = (message: ServerMessage) => {
-  if (messages.value.some(m => m.id === message.id)) {
-    return;
-  }
+  if (messages.value.some(m => m.id === message.id)) return;
 
-  const isOwn = message.sender.id === currentUser.value?.id;
   const payload = message.payload as TextPayload;
 
   messages.value.push({
@@ -238,26 +222,25 @@ const handleTextMessage = (message: ServerMessage) => {
     timestamp: message.timestamp,
     messageType: 'user',
     sender: message.sender,
-    isOwn: isOwn,
+    isOwn: message.sender.id === currentUser.value?.id,
     content: payload.content,
   } as UserMessage);
 }
 
 const handleACKMessage = (message: ServerMessage) => {
-  const ackPayload = message.payload as MessageConfirmPayload;
-  const tempId = ackPayload.tempID;
+  const { tempId, id, timestamp } = message.payload as MessageConfirmPayload;
 
   if (!tempId) {
-    console.error("Received MSG_CONFIRM without tempID.", message);
+    console.error("Received MSG_CONFIRM without tempId:", message);
     return;
   }
 
   const index = messages.value.findIndex(m =>
-    m.messageType === 'user' && (m as UserMessage).tempID === tempId
+    m.messageType === 'user' && (m as UserMessage).tempId === tempId
   );
 
   if (index === -1) {
-    console.warn(`ACK received for unknown message with tempID: ${tempId}. Possibly already deleted or ignored.`, message);
+    console.warn(`ACK for unknown tempId: ${tempId}`);
     return;
   }
 
@@ -267,40 +250,43 @@ const handleACKMessage = (message: ServerMessage) => {
     ackTimers.delete(tempId);
   }
 
-  const localMessage = messages.value[index] as UserMessage;
+  const localMsg = messages.value[index] as UserMessage;
 
-  if (localMessage.messageType === 'user') {
-    localMessage.id = ackPayload.id;
-    localMessage.timestamp = ackPayload.timestamp;
-    localMessage.status = 'sent';
-
-    delete localMessage.tempID;
-  }
+  localMsg.id = id;
+  localMsg.timestamp = timestamp;
+  localMsg.status = 'sent';
+  localMsg.tempId = undefined;
 }
 
 const handleTokenUpdateMessage = (message: ServerMessage) => {
-  const tokenPayload = message.payload as TokenUpdatePayload;
-  const newToken = tokenPayload.token;
+  const { token } = message.payload as TokenUpdatePayload;
 
-  tokenStore.setToken(newToken);
+  if (token) {
+    roomStore.setRoomToken(token);
+    window.history.replaceState({ ...window.history.state, token }, '');
+  }
 };
 
 const handleAttachmentMessage = (message: ServerMessage) => {
-  if (messages.value.some(m => m.id === message.id)) {
+  if (messages.value.some(m => m.id === message.id)) return;
+
+  const { id, timestamp, sender, payload } = message;
+  const { description, attachments } = payload as AttachmentsPayload;
+
+  const isOwn = sender.id === currentUser.value?.id;
+
+  if (isOwn && messages.value.some(m => (m as UserMessage).tempId)) {
     return;
   }
 
-  const isOwn = message.sender.id === currentUser.value?.id;
-  const payload = message.payload as AttachmentsPayload;
-
   messages.value.push({
-    id: message.id,
-    timestamp: message.timestamp,
+    id,
+    timestamp,
     messageType: 'user',
-    sender: message.sender,
-    isOwn: isOwn,
-    content: payload.description || '',
-    attachments: payload.attachments,
+    sender,
+    isOwn,
+    content: description || '',
+    attachments,
   } as UserMessage);
 }
 
@@ -309,7 +295,7 @@ const handleWsConnected = () => {
     addNewSystemMessage({
       id: `sys_init_${Date.now()}`,
       timestamp: Date.now(),
-      content: 'Chat session started.'
+      content: 'Chat is ready.'
     });
     hasSystemMessageShown.value = true;
   }
@@ -319,6 +305,7 @@ const handleWSMessage = (event: MessageEvent) => {
   let serverMsg: ServerMessage;
 
   try {
+    if (!event.data) return;
     serverMsg = JSON.parse(event.data as string);
   } catch (e) {
     console.error("Failed to parse server message data:", event.data, e);
@@ -327,21 +314,21 @@ const handleWSMessage = (event: MessageEvent) => {
 
   switch (serverMsg.type) {
     case 'ERROR': {
-      const payload = serverMsg.payload as ErrorPayload;
+      const { message: errorMsg } = serverMsg.payload as ErrorPayload;
       addNewSystemMessage({
         id: serverMsg.id,
         timestamp: serverMsg.timestamp,
-        content: payload.message,
+        content: errorMsg || 'An unexpected error occurred.',
         style: 'error'
       });
       break;
     }
 
     case 'INIT_DATA': {
-      const payload = serverMsg.payload as InitDataPayload;
-      currentUser.value = payload.currentUser;
-      onlineUsers.value = payload.onlineUsers;
-      maxUsers.value = payload.maxUsers;
+      const { currentUser: user, onlineUsers: others, maxUsers: max } = serverMsg.payload as InitDataPayload;
+      currentUser.value = user;
+      onlineUsers.value = others;
+      maxUsers.value = max;
       break;
     }
 
@@ -390,6 +377,9 @@ const {
   onConnected: handleWsConnected,
 });
 
+//
+// Send Message
+//
 const handleSendMessage = (content: string, attachmentsToResend?: Attachment[]) => {
   if (!isReady.value) {
     message.warning(`Connection status is: ${connectStatus.value}. Cannot send.`);
@@ -414,72 +404,46 @@ const handleSendMessage = (content: string, attachmentsToResend?: Attachment[]) 
     }
   }
 
-  let finalAttachments: Attachment[] = [];
-
-  if (attachmentsToResend && attachmentsToResend.length > 0) {
-    finalAttachments = attachmentsToResend;
-
-  } else {
-    finalAttachments = filesToUpload.value
-      .filter(f => f.status === 'success' && f.fileKey)
-      .map(f => ({
-        fileKey: f.fileKey!,
-        fileName: f.fileName,
-        mimeType: f.mimeType,
-        fileSize: f.fileSize,
-      }));
-  }
+  let finalAttachments: Attachment[] = attachmentsToResend || filesToUpload.value
+    .filter(f => f.status === 'success' && f.fileKey)
+    .map(f => ({
+      fileKey: f.fileKey!,
+      fileName: f.fileName,
+      mimeType: f.mimeType,
+      fileSize: f.fileSize,
+    }));
 
   const trimmedContent = content.trim();
   const hasAttachments = finalAttachments.length > 0;
 
-  if (!trimmedContent && !hasAttachments) {
-    return;
-  }
+  if (!trimmedContent && !hasAttachments) return;
 
   const tempId = generateTempID();
-  const currentTimestamp = Date.now();
 
   const tempMessage: UserMessage = {
     id: tempId,
-    timestamp: currentTimestamp,
+    timestamp: Date.now(),
     messageType: 'user',
     sender: currentUser.value!,
     isOwn: true,
     content: trimmedContent,
-    tempID: tempId,
+    tempId: tempId,
     status: 'sending',
     attachments: hasAttachments ? finalAttachments : undefined,
   };
-
   messages.value.push(tempMessage as ClientMessage);
 
-  let outboundMessage: OutboundMessage;
-
-  if (hasAttachments) {
-    const payload: AttachmentsPayload = {
-      description: trimmedContent || undefined,
-      attachments: finalAttachments,
-    };
-
-    outboundMessage = {
-      type: "ATTACHMENTS",
-      tempID: tempId,
-      payload: payload as AttachmentsPayload
-    };
-
-  } else {
-    outboundMessage = {
-      type: "TEXT",
-      tempID: tempId,
-      payload: { content: trimmedContent } as TextPayload
-    };
-  }
+  const outboundMessage: OutboundMessage = {
+    type: hasAttachments ? "ATTACHMENTS" : "TEXT",
+    tempId,
+    payload: hasAttachments
+      ? { description: trimmedContent || undefined, attachments: finalAttachments } as AttachmentsPayload
+      : { content: trimmedContent } as TextPayload
+  };
 
   const sent = sendData(outboundMessage);
 
   if (sent) {
-
     if (!attachmentsToResend) {
       filesToUpload.value = [];
       chatInputRef.value?.clearInput();
@@ -488,33 +452,28 @@ const handleSendMessage = (content: string, attachmentsToResend?: Attachment[]) 
     const timerId = setTimeout(() => {
       handleAckTimeout(tempId);
     }, ACK_TIMEOUT_MS);
-
     ackTimers.set(tempId, timerId as unknown as number);
 
   } else {
-    const timerId = ackTimers.get(tempId);
-
-    if (timerId !== undefined) {
-      clearTimeout(timerId);
-    }
-
     handleAckTimeout(tempId);
   }
 };
 
+//
+// Upload file
+//
 const MAX_FILE_COUNT = 3;
 const filesToUpload = ref<UploadAttachment[]>([]);
 
 const updateFileInArray = (updatedFile: UploadAttachment) => {
-  filesToUpload.value = filesToUpload.value.map(f => {
-    return f.id === updatedFile.id ? updatedFile : f;
-  });
+  filesToUpload.value = filesToUpload.value.map(f =>
+    f.id === updatedFile.id ? { ...updatedFile } : f
+  );
 };
 
 const uploadFile = async (file: UploadAttachment): Promise<UploadAttachment> => {
   let currentFile = { ...file };
   let fileToUpload: File = file.originFile;
-
   const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024;
 
   try {
@@ -528,29 +487,27 @@ const uploadFile = async (file: UploadAttachment): Promise<UploadAttachment> => 
         useWebWorker: true,
       };
 
-      const compressedFile = await imageCompression(file.originFile, options);
+      const compressedBlob = await imageCompression(file.originFile, options);
 
-      if (compressedFile.size < file.fileSize) {
+      if (compressedBlob.size < file.fileSize) {
         const newFileName = file.fileName.replace(/\.[^/.]+$/, "") + '.webp';
-        const compressedFileAsFile = new File(
-          [compressedFile],
-          newFileName,
-          { type: compressedFile.type }
-        );
+        fileToUpload = new File([compressedBlob], newFileName, { type: 'image/webp' });
 
-        fileToUpload = compressedFileAsFile;
-        currentFile.fileSize = compressedFileAsFile.size;
-        currentFile.mimeType = compressedFileAsFile.type;
+        currentFile.fileSize = fileToUpload.size;
+        currentFile.mimeType = fileToUpload.type;
         currentFile.fileName = newFileName;
       }
     }
 
     if (fileToUpload.size > MAX_FILE_SIZE_BYTES) {
-      throw new Error(`File size exceeds the maximum limit of 5 MB.`);
+      throw new Error(`File exceeds 5MB limit.`);
     }
 
-    const presignData = await presignUpload(currentFile.fileName, currentFile.mimeType, currentFile.fileSize);
-    const { presignedUrl, fileKey, fileName } = presignData;
+    const { presignedUrl, fileKey, fileName } = await presignUpload(
+      currentFile.fileName,
+      currentFile.mimeType,
+      currentFile.fileSize
+    );
 
     await putFile(presignedUrl, fileToUpload);
 
@@ -563,7 +520,7 @@ const uploadFile = async (file: UploadAttachment): Promise<UploadAttachment> => 
 
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    message.error(`file upload error: ${errorMessage}`);
+    message.error(`Upload failed: ${errorMessage}`);
 
     return {
       ...currentFile,
@@ -581,11 +538,10 @@ const handleUploadStart = (newFiles: UploadAttachment[]) => {
 
   filesToUpload.value.push(...newFiles);
 
-  newFiles.forEach(file => {
+  newFiles.forEach(async (file) => {
     updateFileInArray({ ...file, status: 'uploading' as const });
-    uploadFile(file).then(updatedFile => {
-      updateFileInArray(updatedFile);
-    });
+    const updatedFile = await uploadFile(file);
+    updateFileInArray(updatedFile);
   });
 };
 
@@ -593,6 +549,10 @@ const handleFileRemoved = (fileId: string) => {
   const index = filesToUpload.value.findIndex(f => f.id === fileId);
 
   if (index !== -1) {
+    const file = filesToUpload.value[index];
+    if (file?.previewUrl) {
+      URL.revokeObjectURL(file.previewUrl);
+    }
     filesToUpload.value.splice(index, 1);
   }
 };
@@ -603,15 +563,18 @@ const handleResendMessage = (failedMessage: UserMessage) => {
     return;
   }
 
-  const index = messages.value.findIndex(m => m.tempID === failedMessage.tempID);
+  const tempId = failedMessage.tempId;
+  if (!tempId) return;
+
+  const index = messages.value.findIndex(m =>
+    m.messageType === 'user' && (m as UserMessage).tempId === tempId
+  );
 
   if (index !== -1) {
-    const originalMessage = messages.value[index] as UserMessage;
-
-    const timerId = ackTimers.get(originalMessage.tempID!);
+    const timerId = ackTimers.get(tempId);
     if (timerId !== undefined) {
       clearTimeout(timerId);
-      ackTimers.delete(originalMessage.tempID!);
+      ackTimers.delete(tempId);
     }
 
     messages.value.splice(index, 1);
@@ -637,25 +600,26 @@ const handleLeaveChat = () => {
   });
   filesToUpload.value = [];
 
+  roomStore.clearRoomContext();
+
   router.replace({ name: 'Home' });
 };
 
 const getValidToken = async (code: string): Promise<string | null> => {
-  const tokenFromState = window.history.state.token as string;
+  const tokenFromState = window.history.state?.token as string;
 
   if (tokenFromState) {
-    tokenStore.setToken(tokenFromState);
+    roomStore.setRoomToken(tokenFromState);
     return tokenFromState;
   }
 
   try {
-    const joinResult = await joinChat(code, userID);
-    const newToken = joinResult.token;
-    window.history.replaceState({ token: newToken }, '');
-    tokenStore.setToken(newToken);
-    return newToken;
-
+    const { token } = await joinChat(code);
+    window.history.replaceState({ ...window.history.state, token: token }, '');
+    roomStore.setRoomToken(token);
+    return token;
   } catch (error) {
+    roomStore.clearRoomContext();
     return null;
   }
 };
@@ -682,6 +646,7 @@ onMounted(async () => {
 
 onUnmounted(() => {
   window.removeEventListener('resize', handleResize);
+  handleLeaveChat();
 });
 </script>
 

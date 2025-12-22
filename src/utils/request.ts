@@ -2,7 +2,8 @@
 // Core network request utility module.
 //
 
-import { useTokenStore } from '@/stores/token'
+import { useUserStore } from '@/stores/user'
+import { useRoomStore } from '@/stores/room'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
 
@@ -29,6 +30,9 @@ interface RequestOptions extends RequestInit {
 async function request(url: string, options: RequestOptions = {}) {
   const fullUrl = `${API_BASE_URL}${url}`
 
+  const userStore = useUserStore()
+  const roomStore = useRoomStore()
+
   const defaultHeaders = {
     'Content-Type': 'application/json',
     Accept: 'application/json',
@@ -43,10 +47,20 @@ async function request(url: string, options: RequestOptions = {}) {
     },
   }
 
-  const tokenStore = useTokenStore()
-  const token = tokenStore.getToken
-  if (token) {
-    ;(finalOptions.headers as Record<string, string>)['Authorization'] = `Bearer ${token}`
+  let activeToken: string | null = null
+  const isRoomSpecificApi = url.startsWith('/file')
+
+  if (isRoomSpecificApi) {
+    activeToken = roomStore.roomToken
+    if (!activeToken) {
+      throw new RequestError('Access denied: You must join the room first.', { status: 401 })
+    }
+  } else {
+    activeToken = userStore.identityToken
+  }
+
+  if (activeToken) {
+    ;(finalOptions.headers as Record<string, string>)['Authorization'] = `Bearer ${activeToken}`
   }
 
   if (finalOptions.method === 'POST' || finalOptions.method === 'PUT') {
@@ -65,6 +79,14 @@ async function request(url: string, options: RequestOptions = {}) {
 
   try {
     const response = await fetch(fullUrl, finalOptions)
+
+    if (response.status === 401) {
+      if (isRoomSpecificApi) {
+        roomStore.clearRoomContext()
+      } else {
+        userStore.logout()
+      }
+    }
 
     let backendResp: { code: number; message: string; data: any } = {
       code: -1,

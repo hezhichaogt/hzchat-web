@@ -75,7 +75,7 @@ import { useRouter } from 'vue-router';
 import { useMessage, NFlex, NH1, NText, NDivider, NInputGroup, NCard, NInput, NIcon, NButton, NAlert } from 'naive-ui';
 import { ChatboxOutline, PeopleOutline, LogInOutline } from '@vicons/ionicons5';
 import type { ChatType } from '@/types/chat';
-import { useGuestStore } from '@/stores/guest';
+import { useUserStore } from '@/stores/user';
 import { createChat, joinChat } from '@/services/chat';
 import { useHead } from '@unhead/vue';
 
@@ -93,34 +93,33 @@ useHead({
 
 const message = useMessage();
 const router = useRouter();
-const guestStore = useGuestStore();
 
-const userID = guestStore.guestID;
-const { nickname, getDisplayName } = storeToRefs(guestStore);
-const { setNickname } = guestStore;
-const nicknameInput = ref(nickname.value || '');
+const userStore = useUserStore();
+const { profile, getDisplayName } = storeToRefs(userStore);
 
-watch(nickname, (newVal) => {
+//
+// Nickname
+// 
+const nicknameInput = ref(profile.value.nickname || '');
+
+watch(() => profile.value.nickname, (newVal) => {
   nicknameInput.value = newVal || '';
-}, { immediate: true });
+});
 
 const handleNicknameChange = () => {
   const trimmedInput = nicknameInput.value.trim();
-  const currentNickname = nickname.value;
+  const currentNickname = profile.value.nickname;
 
-  if (trimmedInput === currentNickname) {
-    return;
-  }
+  if (trimmedInput === currentNickname) return;
 
   const validRegex = /^[\p{L}\p{N}_?!-]{1,16}$/u;
-
   if (trimmedInput && !validRegex.test(trimmedInput)) {
-    message.error('Invalid nickname. Must be 1-16 chars (letters, numbers, -, _, ?, !).');
+    message.error('Invalid nickname. Must be 1-16 chars.');
     nicknameInput.value = currentNickname || '';
     return;
   }
 
-  setNickname(trimmedInput);
+  userStore.setGuestNickname(trimmedInput);
 
   if (trimmedInput) {
     message.success(`Nickname saved.`);
@@ -131,38 +130,29 @@ const handleNicknameChange = () => {
 
 const isBusy = ref(false);
 
+//
+// Create Chat
+//
 const handleCreateChat = async (type: ChatType) => {
-  if (isBusy.value) {
-    return;
-  }
+  if (isBusy.value) return;
   isBusy.value = true;
 
   try {
-    const result = await createChat(type);
-    router.push(`/chat/${result.chatCode}`);
-
-  } catch (error) {
-    let displayMessage = 'An unknown error occurred.';
-
-    if (error instanceof Error) {
-      displayMessage = error.message;
-    } else if (typeof error === 'string') {
-      displayMessage = error;
-    }
-    message.error(`Failed to create chat: ${displayMessage}`);
+    const { chatCode } = await createChat(type);
+    router.push(`/chat/${chatCode}`);
+  } catch (error: any) {
+    message.error(`Failed to create chat: ${error.message || 'Unknown error'}`);
   } finally {
     isBusy.value = false;
   }
 };
 
-const createPrivateChat = () => {
-  handleCreateChat('private');
-};
+const createPrivateChat = () => handleCreateChat('private');
+const createGroupChat = () => handleCreateChat('group');
 
-const createGroupChat = () => {
-  handleCreateChat('group');
-};
-
+//
+// Join Chat
+//
 const chatCodeInput = ref('');
 
 const handleJoinChat = async () => {
@@ -173,6 +163,7 @@ const handleJoinChat = async () => {
     message.warning('Please enter a chat code.');
     return;
   }
+
   if (trimmedCode.length !== REQUIRED_LENGTH) {
     message.error(`Chat code must be exactly ${REQUIRED_LENGTH} characters.`);
     return;
@@ -182,26 +173,16 @@ const handleJoinChat = async () => {
   isBusy.value = true;
 
   try {
-    const joinResult = await joinChat(trimmedCode, userID);
+    const { token } = await joinChat(trimmedCode);
 
-    if (!joinResult.token) message.error(`Failed to join chat: No access token received.`);
+    if (!token) throw new Error('No access token received.');
 
     router.push({
       path: `/chat/${trimmedCode}`,
-      state: { token: joinResult.token }
+      state: { token }
     });
-
-  } catch (error) {
-    let displayMessage = 'An unknown error occurred.';
-
-    if (error instanceof Error) {
-      displayMessage = error.message;
-    } else if (typeof error === 'string') {
-      displayMessage = error;
-    }
-
-    message.error(`Failed to join chat: ${displayMessage}`);
-
+  } catch (error: any) {
+    message.error(`Failed to join chat: ${error.message}`);
   } finally {
     isBusy.value = false;
   }

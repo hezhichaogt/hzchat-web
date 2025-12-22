@@ -24,7 +24,7 @@ export interface ChatInfo {
 interface BaseMessage {
   id: string
   timestamp: number
-  tempID?: string
+  tempId?: string
 }
 
 export interface UserMessage extends BaseMessage {
@@ -66,7 +66,7 @@ export interface InitDataPayload {
 }
 
 export interface MessageConfirmPayload {
-  tempID: string
+  tempId: string
   id: string
   timestamp: number
 }
@@ -98,7 +98,7 @@ export interface ServerMessage {
   roomCode: string
   sender: User
   timestamp: number
-  tempID?: string
+  tempId?: string
   payload:
     | TextPayload
     | UserEventPayload
@@ -113,7 +113,7 @@ export type OutboundMessageType = 'TEXT' | 'ATTACHMENTS'
 
 export interface OutboundMessage {
   type: OutboundMessageType
-  tempID?: string
+  tempId?: string
   payload: TextPayload | AttachmentsPayload
 }
 

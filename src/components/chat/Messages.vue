@@ -3,7 +3,7 @@
         <n-scrollbar ref="messageContainerRef" @scroll="handleScroll">
             <div ref="messagesWrapperRef" class="messages-wrapper">
 
-                <div v-for="(msg, index) in messages" :key="msg.id || msg.tempID"
+                <div v-for="(msg, index) in messages" :key="msg.id || msg.tempId"
                     :ref="(el) => { if (index === messages.length - 1) lastMessageRef = el as HTMLElement | null; }">
 
                     <template v-if="msg.messageType === 'user'">

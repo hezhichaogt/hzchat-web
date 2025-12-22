@@ -69,7 +69,7 @@ import { computed } from 'vue';
 import { useThemeVars, NText, NTime, NIcon, NImage } from 'naive-ui';
 import type { UserMessage } from '@/types/chat';
 import type { Attachment } from '@/types/file';
-import { useTokenStore } from '@/stores/token'
+import { useRoomStore } from '@/stores/room'
 import { RefreshOutline, SyncOutline, DocumentOutline } from '@vicons/ionicons5';
 import UserAvatar from '../UserAvatar.vue';
 
@@ -79,7 +79,7 @@ const props = defineProps<{
     currentTime: number;
 }>();
 
-const tokenStore = useTokenStore();
+const roomStore = useRoomStore();
 
 const isAttachments = computed(() => !!props.message.attachments && props.message.attachments.length > 0);
 
@@ -90,14 +90,14 @@ interface DisplayAttachment extends Attachment {
 }
 
 const displayAttachments = computed<DisplayAttachment[]>(() => {
-    const tokenValue = tokenStore.getToken;
+    const currentToken = roomStore.roomToken;
 
-    if (!isAttachments.value || !tokenValue) return [];
+    if (!isAttachments.value || !currentToken) return [];
 
     return props.message.attachments!
         .filter(a => a.mimeType.startsWith('image/'))
         .map(a => {
-            const presignUrl = `${VITE_API_BASE_URL}/file/presign-download?k=${encodeURIComponent(a.fileKey)}&t=${encodeURIComponent(tokenValue)}`;
+            const presignUrl = `${VITE_API_BASE_URL}/file/presign-download?k=${encodeURIComponent(a.fileKey)}&t=${encodeURIComponent(currentToken)}`;
 
             return {
                 ...a,

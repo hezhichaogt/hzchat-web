@@ -2,7 +2,8 @@
 // Chat session API service module.
 //
 
-import { post, RequestError } from '@/utils/request'
+import { post } from '@/utils/request'
+import { useUserStore } from '@/stores/user'
 import type { ChatType } from '@/types/chat'
 
 interface CreateChatResponse {
@@ -10,46 +11,27 @@ interface CreateChatResponse {
 }
 
 export async function createChat(type: ChatType): Promise<CreateChatResponse> {
-  const data = {
-    type,
-  }
-
   const url = '/chat/create'
+  const data = { type }
 
-  try {
-    const responseData = await post<CreateChatResponse>(url, data)
-    if (!responseData || !responseData.chatCode) {
-      throw new RequestError('API response missing chat code.', { code: -2 })
-    }
-
-    return responseData
-  } catch (error) {
-    if (error instanceof RequestError) {
-      throw error
-    }
-    throw new RequestError('Failed to initiate chat creation.')
-  }
+  return await post<CreateChatResponse>(url, data)
 }
 
 interface JoinChatResponse {
   token: string
 }
 
-export async function joinChat(code: string, guestID: string): Promise<JoinChatResponse> {
-  const url = `/chat/join`
+export async function joinChat(code: string): Promise<JoinChatResponse> {
+  const url = '/chat/join'
+  const userStore = useUserStore()
+  const { profile } = userStore
 
-  const data = {
-    code,
-    guestID,
+  const data: any = { code }
+
+  if (profile.userType === 'guest') {
+    data.guestId = profile.id
+    data.nickname = profile.nickname
   }
 
-  try {
-    const responseData = await post<JoinChatResponse>(url, data)
-    return responseData
-  } catch (error) {
-    if (error instanceof RequestError) {
-      throw error
-    }
-    throw new RequestError('Failed to join chat session.')
-  }
+  return await post<JoinChatResponse>(url, data)
 }

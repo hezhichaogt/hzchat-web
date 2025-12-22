@@ -2,11 +2,12 @@
 // Guest identity management utility module.
 //
 
-const GUEST_ID_KEY = 'HZCHAT_GUEST'
+const GUEST_ID_KEY = 'HZCHAT_GUEST_ID'
+const GUEST_NICKNAME_KEY = 'HZCHAT_GUEST_NICKNAME'
+
 const GUEST_ID_PREFIX = 'guest_'
-const GUEST_ID_LENGTH = 6
+const GUEST_ID_RAW_LENGTH = 6
 const BASE62_CHARS = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'
-const GUEST_NICKNAME_KEY = 'HZCHAT_NICKNAME'
 
 function generateSecureBase62(length: number): string {
   let result = ''
@@ -30,20 +31,24 @@ function generateSecureBase62(length: number): string {
 }
 
 export function getOrCreateGuestID(): string {
-  let guestID = localStorage.getItem(GUEST_ID_KEY)
+  let guestId = localStorage.getItem(GUEST_ID_KEY)
 
-  if (!guestID) {
-    const rawID = generateSecureBase62(GUEST_ID_LENGTH)
-    guestID = GUEST_ID_PREFIX + rawID
+  if (
+    !guestId ||
+    !guestId.startsWith(GUEST_ID_PREFIX) ||
+    guestId.length !== GUEST_ID_PREFIX.length + GUEST_ID_RAW_LENGTH
+  ) {
+    const rawID = generateSecureBase62(GUEST_ID_RAW_LENGTH)
+    guestId = GUEST_ID_PREFIX + rawID
 
     try {
-      localStorage.setItem(GUEST_ID_KEY, guestID)
+      localStorage.setItem(GUEST_ID_KEY, guestId)
     } catch (e) {
-      console.error('localStorage write failed:', e)
+      console.warn('Failed to save guestID to localStorage:', e)
     }
   }
 
-  return guestID
+  return guestId
 }
 
 export function loadNickname(): string | null {
@@ -51,20 +56,19 @@ export function loadNickname(): string | null {
     const nickname = localStorage.getItem(GUEST_NICKNAME_KEY)
     return nickname?.trim() || null
   } catch (e) {
-    console.error('LocalStorage read failed:', e)
     return null
   }
 }
 
 export function saveNickname(nickname: string): void {
-  const trimmedNickname = nickname.trim()
+  const trimmed = nickname.trim()
   try {
-    if (trimmedNickname) {
-      localStorage.setItem(GUEST_NICKNAME_KEY, trimmedNickname)
+    if (trimmed) {
+      localStorage.setItem(GUEST_NICKNAME_KEY, trimmed)
     } else {
       localStorage.removeItem(GUEST_NICKNAME_KEY)
     }
   } catch (e) {
-    console.error('LocalStorage write failed:', e)
+    console.warn('Failed to save nickname to localStorage:', e)
   }
 }
