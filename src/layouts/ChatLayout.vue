@@ -1,10 +1,10 @@
 <template>
-  <div class="container">
+  <div class="flex flex-col h-screen overflow-hidden">
 
     <Header />
 
-    <div class="content-wrapper">
-      <div class="content-inner">
+    <div class="flex-1 w-full flex justify-center min-h-0 bg-slate-50">
+      <div class="mx-auto w-full max-w-266.5 flex p-2 md:px-0 ">
         <router-view />
       </div>
     </div>
@@ -20,33 +20,3 @@
 import { RouterView } from 'vue-router';
 import Header from '@/components/Header.vue'; 
 </script>
-
-<style scoped>
-.container {
-  display: flex;
-  flex-direction: column;
-  height: 100vh;
-  overflow: hidden;
-}
-
-.content-wrapper {
-  flex: 1;
-  display: flex;
-  justify-content: center;
-  min-height: 0;
-}
-
-.content-inner {
-  flex: 1;
-  display: flex;
-  max-width: 1066px;
-  width: 100%;
-  padding: 8px;
-}
-
-@media (min-width: 1066px) {
-  .content-inner {
-    padding: 8px 0;
-  }
-}
-</style>

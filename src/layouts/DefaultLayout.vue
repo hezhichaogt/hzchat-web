@@ -1,11 +1,13 @@
 <template>
-  <div class="container">
+  <div class="min-h-screen flex flex-col">
 
     <Header />
 
-    <div class="main-content">
-      <router-view />
-    </div>
+    <main class="flex-1 w-full flex flex-col p-4 md:p-8 items-center">
+      <div class="mx-auto w-full max-w-300 flex-1 flex flex-col">
+        <router-view />
+      </div>
+    </main>
 
     <Footer />
 
@@ -23,18 +25,3 @@ import { RouterView } from 'vue-router';
 import Header from '@/components/Header.vue';
 import Footer from '@/components/Footer.vue';
 </script>
-
-<style scoped>
-.container {
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-}
-
-.main-content {
-  flex: 1;
-  padding: 16px;
-  display: flex;
-  flex-direction: column;
-}
-</style>

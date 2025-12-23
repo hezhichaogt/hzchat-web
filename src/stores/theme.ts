@@ -10,7 +10,7 @@ interface ThemeState {
 
 export const useThemeStore = defineStore('theme', {
   state: (): ThemeState => ({
-    isDark: window.matchMedia('(prefers-color-scheme: dark)').matches,
+    isDark: false,
   }),
 
   getters: {
@@ -19,7 +19,7 @@ export const useThemeStore = defineStore('theme', {
 
   actions: {
     setIsDark(value: boolean) {
-      this.isDark = value
+      this.isDark = false
     },
   },
 })

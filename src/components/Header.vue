@@ -8,7 +8,7 @@
         </n-gradient-text>
       </RouterLink>
       <div class="header-actions">
-        <ThemeSwitcher />
+        <!-- <ThemeSwitcher /> -->
       </div>
     </div>
   </n-layout-header>
