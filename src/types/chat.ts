@@ -2,10 +2,12 @@
 // Core TypeScript type definitions for the chat functionality.
 //
 
-import type { User } from './user'
+import type { UserBase, UserProfile } from './user'
 import type { Attachment } from './file'
 
 export type ChatType = 'private' | 'group'
+export type MessageStatus = 'sending' | 'sent' | 'failed'
+export type SystemStyleType = 'default' | 'error'
 
 export type ConnectionStatus =
   | 'INIT'
@@ -15,12 +17,6 @@ export type ConnectionStatus =
   | 'FINAL_DISCONNECT'
   | 'FATAL_ERROR'
 
-export interface ChatInfo {
-  code: string
-  maxClients: number
-  currentClients: number
-}
-
 interface BaseMessage {
   id: string
   timestamp: number
@@ -29,14 +25,12 @@ interface BaseMessage {
 
 export interface UserMessage extends BaseMessage {
   messageType: 'user'
-  sender: User
+  sender: UserBase
   isOwn: boolean
   content: string
   status: MessageStatus
   attachments?: Attachment[]
 }
-
-export type SystemStyleType = 'default' | 'error'
 
 export interface SystemMessage extends BaseMessage {
   messageType: 'system'
@@ -46,12 +40,23 @@ export interface SystemMessage extends BaseMessage {
 
 export type ClientMessage = UserMessage | SystemMessage
 
+export interface ChatInfo {
+  code: string
+  maxClients: number
+  currentClients: number
+}
+
 export interface TextPayload {
   content: string
 }
 
+export interface AttachmentsPayload {
+  description?: string
+  attachments: Attachment[]
+}
+
 export interface UserEventPayload {
-  user: User
+  user: UserBase
 }
 
 export interface ErrorPayload {
@@ -60,8 +65,8 @@ export interface ErrorPayload {
 }
 
 export interface InitDataPayload {
-  currentUser: User
-  onlineUsers: User[]
+  currentUser: UserProfile
+  onlineUsers: UserBase[]
   maxUsers: number
 }
 
@@ -73,11 +78,6 @@ export interface MessageConfirmPayload {
 
 export interface TokenUpdatePayload {
   token: string
-}
-
-export interface AttachmentsPayload {
-  description?: string
-  attachments: Attachment[]
 }
 
 export type UserEventType = 'USER_JOINED' | 'USER_LEFT'
@@ -96,7 +96,7 @@ export interface ServerMessage {
   id: string
   type: MessageType
   roomCode: string
-  sender: User
+  sender: UserBase
   timestamp: number
   tempId?: string
   payload:
@@ -116,5 +116,3 @@ export interface OutboundMessage {
   tempId?: string
   payload: TextPayload | AttachmentsPayload
 }
-
-export type MessageStatus = 'sending' | 'sent' | 'failed'

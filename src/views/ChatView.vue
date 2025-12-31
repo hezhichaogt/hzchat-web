@@ -1,95 +1,118 @@
 <template>
-  <div class="chat-container">
-
+  <div class="h-dvh w-full overflow-hidden bg-zinc-50 dark:bg-zinc-950 flex flex-col items-center justify-center">
     <template v-if="connectStatus === 'FATAL_ERROR'">
-      <FatalErrorPage />
-    </template>
-
-    <template v-else-if="(connectStatus === 'INIT' || connectStatus === 'CONNECTING') && !hasConnectedEver">
-      <LoadingPage :status="connectStatus" />
-    </template>
-
-    <template v-else>
-      <div class="layout">
-
-        <div class="main-section">
-          <MobileHeader v-if="isMobile" :code="chatCode" :status="connectStatus" :users="onlineUsers"
-            :max-users="maxUsers" @leave="handleLeaveChat" />
-
-          <n-card class="messages-section" :bordered="true"
-            content-style="padding: 0; flex: 1; display: flex; flex-direction: column; min-height: 0;">
-            <Messages :messages="messages" :on-resend="handleResendMessage" />
-          </n-card>
-
-          <div class="input-section">
-            <ChatInput ref="chatInputRef" @send="handleSendMessage" :disabled="!isReady"
-              @upload-start="handleUploadStart" @file-removed="handleFileRemoved" :files="filesToUpload"
-              :max-files="MAX_FILE_COUNT" />
+      <div class="max-w-sm w-full p-6 text-center animate-in fade-in zoom-in duration-300">
+        <div class="flex justify-center mb-6">
+          <div class="p-4 rounded-full bg-red-50 dark:bg-red-900/20 text-red-500">
+            <AlertCircle class="w-10 h-10" />
           </div>
         </div>
 
-        <div class="sidebar-section">
-          <div class="info-section">
-            <InfoHeader :code="chatCode" :status="connectStatus" @leave="handleLeaveChat" />
-          </div>
+        <div class="space-y-2 mb-8">
+          <h1 class="text-2xl font-bold text-zinc-900 dark:text-zinc-100 tracking-tight">
+            Unable to Connect
+          </h1>
+          <p class="text-zinc-500 dark:text-zinc-400 text-sm leading-relaxed">
+            The room might be full, or the chat server is not responding.
+          </p>
+        </div>
 
-          <div class="users-section">
-            <Users :users="onlineUsers" :max-users="maxUsers" :status="connectStatus" />
-          </div>
+        <div class="flex flex-col gap-3 w-full max-w-70 mx-auto">
+          <Button @click="handleRetry" variant="outline"
+            class="w-full border-zinc-200 dark:border-zinc-800 hover:cursor-pointer">
+            Retry
+          </Button>
+
+          <Button @click="handleLeaveChat" variant="default" class="w-full hover:cursor-pointer">
+            Leave Chat
+          </Button>
         </div>
       </div>
     </template>
+
+    <template v-else-if="(connectStatus === 'INIT' || connectStatus === 'CONNECTING') && !hasConnectedEver">
+      <div class="flex flex-col items-center justify-center space-y-6 animate-in fade-in duration-700">
+        <div class="relative">
+          <Zap class="w-12 h-12 text-zinc-900 dark:text-zinc-100 fill-current animate-scale-pulse" />
+          <div class="absolute inset-0 blur-2xl bg-zinc-400/20 dark:bg-zinc-100/10 rounded-full animate-scale-pulse">
+          </div>
+        </div>
+
+        <div class="relative flex items-center justify-center">
+          <p class="text-[11px] font-bold text-zinc-400 dark:text-zinc-500 tracking-[0.2em] uppercase">
+            {{ connectStatus === 'INIT' ? 'Initializing' : 'Connecting' }}
+          </p>
+
+          <span class="dot-loader absolute left-full ml-1"></span>
+        </div>
+      </div>
+    </template>
+
+    <div v-else
+      class="flex-1 w-full max-w-3xl mx-auto flex flex-col min-h-0 relative border-x border-zinc-200/50 dark:border-zinc-800/50">
+
+      <Header :code="chatCode" :connectStatus="connectStatus" :users="onlineUsers" :max-users="maxUsers"
+        @leave="handleLeaveChat" />
+
+      <Messages :messages="messages" :on-resend="handleResendMessage" />
+
+      <InputPanel :connectStatus="connectStatus" :files="filesToUpload" :maxFiles="MAX_FILE_COUNT"
+        @send="handleSendMessage" @upload-start="handleUploadStart" @file-removed="handleFileRemoved" />
+
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-//
-// Real-time chat session view component. This is the application's core view, 
-// responsible for handling the following key logic:
-// 1. State Management: Renders loading, error, or main chat interface based on `connectStatus`.
-// 2. WebSocket Communication: Manages connection, reconnection, and message exchange 
-//    via the `useWebSocketReconnector` Hook.
-// 3. Message Handling: Processes all inbound server messages (e.g., initial data, 
-//    user messages, system events, message confirmation ACK).
-// 4. Message Reliability: Implements temporary ID (tempID) and ACK mechanism, 
-//    handling message status ('sending', 'failed', 'sent') and resend logic.
-// 5. User Interface: Integrates the message list, input box, info header, and 
-//    user list, adapting the layout for mobile/desktop.
-//
-import { ref, onMounted, computed, onUnmounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { NCard, useMessage } from 'naive-ui';
-import type { User } from '@/types/user';
-import type { UserMessage, SystemMessage, TokenUpdatePayload, ClientMessage, SystemStyleType, ServerMessage, ErrorPayload, InitDataPayload, UserEventPayload, MessageConfirmPayload, TextPayload, OutboundMessage, AttachmentsPayload } from '@/types/chat';
-import type { UploadAttachment, Attachment } from '@/types/file';
-import { generateTempID } from '@/utils/idGenerator';
-import { putFile } from '@/utils/fileUpload';
-import { joinChat } from '@/services/chat';
-import { presignUpload } from '@/services/file';
-import { useUserStore } from '@/stores/user';
+import { useHead } from '@unhead/vue';
+
+import Header from '@/components/chat/Header.vue';
+import Messages from '@/components/chat/Messages.vue';
+import InputPanel from '@/components/chat/InputPanel.vue';
+import { Button } from '@/components/ui/button';
+import { AlertCircle, Zap } from 'lucide-vue-next';
+import { toast } from 'vue-sonner';
+
 import { useRoomStore } from '@/stores/room';
 import { useWebSocketReconnector } from '@/hooks/useWebSocketReconnector';
-import FatalErrorPage from '@/components/chat/FatalErrorPage.vue';
-import LoadingPage from '@/components/chat/LoadingPage.vue';
-import MobileHeader from '@/components/chat/MobileHeader.vue';
-import Messages from '@/components/chat/Messages.vue';
-import InfoHeader from '@/components/chat/InfoHeader.vue';
-import Users from '@/components/chat/Users.vue';
-import ChatInput from '@/components/chat/ChatInput.vue';
-import { useHead } from '@unhead/vue';
+
+import { joinChat } from '@/services/chat';
+import { presignUpload } from '@/services/file';
+import { putFile } from '@/utils/fileUpload';
+import { generateTempID } from '@/utils/idGenerator';
 import imageCompression from 'browser-image-compression';
+
+import type { UserBase, UserProfile } from '@/types/user';
+import type { UploadAttachment, Attachment } from '@/types/file';
+import type {
+  UserMessage,
+  SystemMessage,
+  TokenUpdatePayload,
+  ClientMessage,
+  SystemStyleType,
+  ServerMessage,
+  ErrorPayload,
+  InitDataPayload,
+  UserEventPayload,
+  MessageConfirmPayload,
+  TextPayload,
+  OutboundMessage,
+  AttachmentsPayload
+} from '@/types/chat';
+
 
 const route = useRoute();
 const router = useRouter();
-const message = useMessage();
-const userStore = useUserStore();
 const roomStore = useRoomStore();
 
 const chatCode = ref<string | null>(null);
 const maxUsers = ref<number>(0);
-const currentUser = ref<User | null>(null);
-const onlineUsers = ref<User[]>([]);
+const currentUser = ref<UserProfile | null>(null);
+const onlineUsers = ref<UserBase[]>([]);
 const messages = ref<ClientMessage[]>([]);
+
 const ACK_TIMEOUT_MS = 5000;
 const ackTimers = new Map<string, number>();
 const hasSystemMessageShown = ref(false);
@@ -99,25 +122,18 @@ interface ChatInputExpose {
 }
 const chatInputRef = ref<ChatInputExpose | null>(null);
 
-//
-// Responsive design
-//
-const MOBILE_BREAKPOINT = 768;
-const isMobile = ref(window.innerWidth < MOBILE_BREAKPOINT);
-const handleResize = () => {
-  isMobile.value = window.innerWidth < MOBILE_BREAKPOINT;
-};
 
-//
 // SEO
-//
-const dynamicTitle = computed(() =>
-  chatCode.value ? `Chat ${chatCode.value}` : 'Loading Chat...'
-);
 const BASE_URL = import.meta.env.VITE_BASE_URL || window.location.origin;
+
+const dynamicTitle = computed(() =>
+  chatCode.value ? `${chatCode.value}` : 'Loading Chat...'
+);
+
 const dynamicUrl = computed(() =>
   chatCode.value ? `${BASE_URL}/chat/${chatCode.value}` : BASE_URL
 );
+
 const dynamicDescription = computed(() => {
   const baseDesc = 'Create your temporary, zero-record chat room instantly. No trace, no burden.';
   return chatCode.value ? `Join Chat ${chatCode.value}! ${baseDesc}` : baseDesc;
@@ -137,9 +153,8 @@ useHead({
   ],
 });
 
-//
-// WebSocket
-//
+
+// WebSocket Logic
 const WS_BASE_URL = import.meta.env.VITE_WS_BASE_URL;
 
 const wsUrl = computed(() => {
@@ -150,7 +165,6 @@ const wsUrl = computed(() => {
 
 const handleAckTimeout = (tempId: string) => {
   const timerId = ackTimers.get(tempId);
-
   if (timerId !== undefined) {
     clearTimeout(timerId);
     ackTimers.delete(tempId);
@@ -164,7 +178,7 @@ const handleAckTimeout = (tempId: string) => {
     const msg = messages.value[index] as UserMessage;
     if (msg.status === 'sending') {
       msg.status = 'failed';
-      message.error('Message confirmation timed out. Please try again.');
+      toast.error('Message not sent. Please try again.');
     }
   }
 };
@@ -184,7 +198,6 @@ const addNewSystemMessage = ({ id, timestamp, content, style = 'default' }: {
     content,
     style,
   };
-
   messages.value.push(newMessage);
 };
 
@@ -202,19 +215,16 @@ const handleUserEvent = (msg: ServerMessage) => {
     onlineUsers.value = onlineUsers.value.filter(u => u.id !== eventUser.id);
   }
 
-  const action = eventType === 'USER_JOINED' ? 'joined' : 'left';
-  const content = `${eventUser.nickname} has ${action} the chat.`;
+  const content =
+    eventType === 'USER_JOINED'
+      ? `${eventUser.nickname} joined the chat.`
+      : `${eventUser.nickname} left the chat.`;
 
-  addNewSystemMessage({
-    id,
-    timestamp,
-    content
-  });
-}
+  addNewSystemMessage({ id, timestamp, content });
+};
 
 const handleTextMessage = (message: ServerMessage) => {
   if (messages.value.some(m => m.id === message.id)) return;
-
   const payload = message.payload as TextPayload;
 
   messages.value.push({
@@ -225,24 +235,16 @@ const handleTextMessage = (message: ServerMessage) => {
     isOwn: message.sender.id === currentUser.value?.id,
     content: payload.content,
   } as UserMessage);
-}
+};
 
 const handleACKMessage = (message: ServerMessage) => {
   const { tempId, id, timestamp } = message.payload as MessageConfirmPayload;
-
-  if (!tempId) {
-    console.error("Received MSG_CONFIRM without tempId:", message);
-    return;
-  }
+  if (!tempId) return;
 
   const index = messages.value.findIndex(m =>
     m.messageType === 'user' && (m as UserMessage).tempId === tempId
   );
-
-  if (index === -1) {
-    console.warn(`ACK for unknown tempId: ${tempId}`);
-    return;
-  }
+  if (index === -1) return;
 
   const timerId = ackTimers.get(tempId);
   if (timerId !== undefined) {
@@ -251,16 +253,14 @@ const handleACKMessage = (message: ServerMessage) => {
   }
 
   const localMsg = messages.value[index] as UserMessage;
-
   localMsg.id = id;
   localMsg.timestamp = timestamp;
   localMsg.status = 'sent';
   localMsg.tempId = undefined;
-}
+};
 
 const handleTokenUpdateMessage = (message: ServerMessage) => {
   const { token } = message.payload as TokenUpdatePayload;
-
   if (token) {
     roomStore.setRoomToken(token);
     window.history.replaceState({ ...window.history.state, token }, '');
@@ -272,7 +272,6 @@ const handleAttachmentMessage = (message: ServerMessage) => {
 
   const { id, timestamp, sender, payload } = message;
   const { description, attachments } = payload as AttachmentsPayload;
-
   const isOwn = sender.id === currentUser.value?.id;
 
   if (isOwn && messages.value.some(m => (m as UserMessage).tempId)) {
@@ -288,22 +287,17 @@ const handleAttachmentMessage = (message: ServerMessage) => {
     content: description || '',
     attachments,
   } as UserMessage);
-}
+};
 
 const handleWsConnected = () => {
   if (!hasSystemMessageShown.value) {
-    addNewSystemMessage({
-      id: `sys_init_${Date.now()}`,
-      timestamp: Date.now(),
-      content: 'Chat is ready.'
-    });
+    console.log('Chat is ready.');
     hasSystemMessageShown.value = true;
   }
 };
 
 const handleWSMessage = (event: MessageEvent) => {
   let serverMsg: ServerMessage;
-
   try {
     if (!event.data) return;
     serverMsg = JSON.parse(event.data as string);
@@ -318,12 +312,11 @@ const handleWSMessage = (event: MessageEvent) => {
       addNewSystemMessage({
         id: serverMsg.id,
         timestamp: serverMsg.timestamp,
-        content: errorMsg || 'An unexpected error occurred.',
+        content: errorMsg || 'Something went wrong. Please try again.',
         style: 'error'
       });
       break;
     }
-
     case 'INIT_DATA': {
       const { currentUser: user, onlineUsers: others, maxUsers: max } = serverMsg.payload as InitDataPayload;
       currentUser.value = user;
@@ -331,33 +324,22 @@ const handleWSMessage = (event: MessageEvent) => {
       maxUsers.value = max;
       break;
     }
-
     case 'USER_JOINED':
-    case 'USER_LEFT': {
+    case 'USER_LEFT':
       handleUserEvent(serverMsg);
       break;
-    }
-
-    case 'TEXT': {
+    case 'TEXT':
       handleTextMessage(serverMsg);
       break;
-    }
-
-    case 'MSG_CONFIRM': {
+    case 'MSG_CONFIRM':
       handleACKMessage(serverMsg);
       break;
-    }
-
-    case 'TOKEN_UPDATE': {
+    case 'TOKEN_UPDATE':
       handleTokenUpdateMessage(serverMsg);
       break;
-    }
-
-    case 'ATTACHMENTS': {
+    case 'ATTACHMENTS':
       handleAttachmentMessage(serverMsg);
       break;
-    }
-
     default:
       console.warn(`Received unknown message type: ${serverMsg.type}`, serverMsg);
       break;
@@ -377,12 +359,11 @@ const {
   onConnected: handleWsConnected,
 });
 
-//
-// Send Message
-//
+
+// Message Sending
 const handleSendMessage = (content: string, attachmentsToResend?: Attachment[]) => {
   if (!isReady.value) {
-    message.warning(`Connection status is: ${connectStatus.value}. Cannot send.`);
+    toast.warning('Not connected yet. Please try again in a moment.');
     return;
   }
 
@@ -392,14 +373,14 @@ const handleSendMessage = (content: string, attachmentsToResend?: Attachment[]) 
     );
 
     if (ongoingUploads.length > 0) {
-      message.warning(`${ongoingUploads.length} files are still uploading. Please wait.`);
+      toast.warning(`Uploading ${ongoingUploads.length} file(s). Please wait.`);
       return;
     }
 
     const failedUploads = filesToUpload.value.filter(f => f.status === 'failed');
 
     if (failedUploads.length > 0) {
-      message.error(`${failedUploads.length} files failed to upload. Please remove or retry.`);
+      toast.error(`${failedUploads.length} file(s) couldn't be uploaded. Please retry or remove them.`);
       return;
     }
   }
@@ -415,11 +396,9 @@ const handleSendMessage = (content: string, attachmentsToResend?: Attachment[]) 
 
   const trimmedContent = content.trim();
   const hasAttachments = finalAttachments.length > 0;
-
   if (!trimmedContent && !hasAttachments) return;
 
   const tempId = generateTempID();
-
   const tempMessage: UserMessage = {
     id: tempId,
     timestamp: Date.now(),
@@ -442,124 +421,23 @@ const handleSendMessage = (content: string, attachmentsToResend?: Attachment[]) 
   };
 
   const sent = sendData(outboundMessage);
-
   if (sent) {
     if (!attachmentsToResend) {
       filesToUpload.value = [];
       chatInputRef.value?.clearInput();
     }
-
     const timerId = setTimeout(() => {
       handleAckTimeout(tempId);
     }, ACK_TIMEOUT_MS);
     ackTimers.set(tempId, timerId as unknown as number);
-
   } else {
     handleAckTimeout(tempId);
   }
 };
 
-//
-// Upload file
-//
-const MAX_FILE_COUNT = 3;
-const filesToUpload = ref<UploadAttachment[]>([]);
-
-const updateFileInArray = (updatedFile: UploadAttachment) => {
-  filesToUpload.value = filesToUpload.value.map(f =>
-    f.id === updatedFile.id ? { ...updatedFile } : f
-  );
-};
-
-const uploadFile = async (file: UploadAttachment): Promise<UploadAttachment> => {
-  let currentFile = { ...file };
-  let fileToUpload: File = file.originFile;
-  const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024;
-
-  try {
-
-    if (file.mimeType.startsWith('image/') && file.mimeType !== 'image/gif') {
-      const options = {
-        maxSizeMB: 4.8,
-        maxWidthOrHeight: 1920,
-        initialQuality: 0.8,
-        fileType: 'image/webp',
-        useWebWorker: true,
-      };
-
-      const compressedBlob = await imageCompression(file.originFile, options);
-
-      if (compressedBlob.size < file.fileSize) {
-        const newFileName = file.fileName.replace(/\.[^/.]+$/, "") + '.webp';
-        fileToUpload = new File([compressedBlob], newFileName, { type: 'image/webp' });
-
-        currentFile.fileSize = fileToUpload.size;
-        currentFile.mimeType = fileToUpload.type;
-        currentFile.fileName = newFileName;
-      }
-    }
-
-    if (fileToUpload.size > MAX_FILE_SIZE_BYTES) {
-      throw new Error(`File exceeds 5MB limit.`);
-    }
-
-    const { presignedUrl, fileKey, fileName } = await presignUpload(
-      currentFile.fileName,
-      currentFile.mimeType,
-      currentFile.fileSize
-    );
-
-    await putFile(presignedUrl, fileToUpload);
-
-    return {
-      ...currentFile,
-      status: 'success' as const,
-      fileKey: fileKey,
-      fileName: fileName,
-    };
-
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    message.error(`Upload failed: ${errorMessage}`);
-
-    return {
-      ...currentFile,
-      status: 'failed' as const,
-    };
-  }
-}
-
-const handleUploadStart = (newFiles: UploadAttachment[]) => {
-  if (filesToUpload.value.length + newFiles.length > MAX_FILE_COUNT) {
-    message.warning(`Maximum of ${MAX_FILE_COUNT} files are allowed.`);
-    newFiles.forEach(f => URL.revokeObjectURL(f.previewUrl));
-    return;
-  }
-
-  filesToUpload.value.push(...newFiles);
-
-  newFiles.forEach(async (file) => {
-    updateFileInArray({ ...file, status: 'uploading' as const });
-    const updatedFile = await uploadFile(file);
-    updateFileInArray(updatedFile);
-  });
-};
-
-const handleFileRemoved = (fileId: string) => {
-  const index = filesToUpload.value.findIndex(f => f.id === fileId);
-
-  if (index !== -1) {
-    const file = filesToUpload.value[index];
-    if (file?.previewUrl) {
-      URL.revokeObjectURL(file.previewUrl);
-    }
-    filesToUpload.value.splice(index, 1);
-  }
-};
-
 const handleResendMessage = (failedMessage: UserMessage) => {
   if (!isReady.value) {
-    message.error('Connection not ready. Cannot resend.');
+    toast.error('Connection not ready yet. Try again in a moment.');
     return;
   }
 
@@ -576,16 +454,106 @@ const handleResendMessage = (failedMessage: UserMessage) => {
       clearTimeout(timerId);
       ackTimers.delete(tempId);
     }
-
     messages.value.splice(index, 1);
   }
-
   handleSendMessage(failedMessage.content, failedMessage.attachments);
 };
 
+
+// File Uploading
+const MAX_FILE_COUNT = 3;
+const filesToUpload = ref<UploadAttachment[]>([]);
+
+const updateFileInArray = (updatedFile: UploadAttachment) => {
+  filesToUpload.value = filesToUpload.value.map(f =>
+    f.id === updatedFile.id ? { ...updatedFile } : f
+  );
+};
+
+const uploadFile = async (file: UploadAttachment): Promise<UploadAttachment> => {
+  let currentFile = { ...file };
+  let fileToUpload: File = file.originFile;
+  const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024;
+
+  try {
+    if (file.mimeType.startsWith('image/') && file.mimeType !== 'image/gif') {
+      const options = {
+        maxSizeMB: 4.8,
+        maxWidthOrHeight: 1920,
+        initialQuality: 0.8,
+        fileType: 'image/webp',
+        useWebWorker: true,
+      };
+      const compressedBlob = await imageCompression(file.originFile, options);
+
+      if (compressedBlob.size < file.fileSize) {
+        const newFileName = file.fileName.replace(/\.[^/.]+$/, "") + '.webp';
+        fileToUpload = new File([compressedBlob], newFileName, { type: 'image/webp' });
+        currentFile.fileSize = fileToUpload.size;
+        currentFile.mimeType = fileToUpload.type;
+        currentFile.fileName = newFileName;
+      }
+    }
+
+    if (fileToUpload.size > MAX_FILE_SIZE_BYTES) {
+      throw new Error('File too large (max 5 MB).');
+    }
+
+    const { presignedUrl, fileKey, fileName } = await presignUpload(
+      currentFile.fileName,
+      currentFile.mimeType,
+      currentFile.fileSize
+    );
+
+    await putFile(presignedUrl, fileToUpload);
+
+    return {
+      ...currentFile,
+      status: 'success' as const,
+      fileKey: fileKey,
+      fileName: fileName,
+    };
+  } catch (error) {
+    console.error(error);
+    toast.error(`Couldn't upload this file.`);
+    return {
+      ...currentFile,
+      status: 'failed' as const,
+    };
+  }
+};
+
+const handleUploadStart = (newFiles: UploadAttachment[]) => {
+  if (filesToUpload.value.length + newFiles.length > MAX_FILE_COUNT) {
+    toast.warning(`You can upload up to ${MAX_FILE_COUNT} files.`);
+    newFiles.forEach(f => URL.revokeObjectURL(f.previewUrl));
+    return;
+  }
+
+  filesToUpload.value.push(...newFiles);
+
+  newFiles.forEach(async (file) => {
+    updateFileInArray({ ...file, status: 'uploading' as const });
+    const updatedFile = await uploadFile(file);
+    updateFileInArray(updatedFile);
+  });
+};
+
+const handleFileRemoved = (fileId: string) => {
+  const index = filesToUpload.value.findIndex(f => f.id === fileId);
+  if (index !== -1) {
+    const file = filesToUpload.value[index];
+    if (file?.previewUrl) {
+      URL.revokeObjectURL(file.previewUrl);
+    }
+    filesToUpload.value.splice(index, 1);
+  }
+};
+
+
+// Room Management
 const handleLeaveChat = () => {
   closeConnectionByUser();
-
   messages.value = [];
   onlineUsers.value = [];
   hasSystemMessageShown.value = false;
@@ -594,20 +562,20 @@ const handleLeaveChat = () => {
   ackTimers.clear();
 
   filesToUpload.value.forEach(f => {
-    if (f.previewUrl) {
-      URL.revokeObjectURL(f.previewUrl);
-    }
+    if (f.previewUrl) URL.revokeObjectURL(f.previewUrl);
   });
   filesToUpload.value = [];
 
   roomStore.clearRoomContext();
-
   router.replace({ name: 'Home' });
+};
+
+const handleRetry = () => {
+  window.location.reload();
 };
 
 const getValidToken = async (code: string): Promise<string | null> => {
   const tokenFromState = window.history.state?.token as string;
-
   if (tokenFromState) {
     roomStore.setRoomToken(tokenFromState);
     return tokenFromState;
@@ -624,9 +592,9 @@ const getValidToken = async (code: string): Promise<string | null> => {
   }
 };
 
-onMounted(async () => {
-  window.addEventListener('resize', handleResize);
 
+// Lifecycle Hooks
+onMounted(async () => {
   const code = route.params.code as string;
   if (!code) {
     connectStatus.value = 'FATAL_ERROR';
@@ -634,7 +602,6 @@ onMounted(async () => {
   }
 
   chatCode.value = code;
-
   const token = await getValidToken(code);
   if (!token) {
     connectStatus.value = 'FATAL_ERROR';
@@ -645,72 +612,53 @@ onMounted(async () => {
 });
 
 onUnmounted(() => {
-  window.removeEventListener('resize', handleResize);
   handleLeaveChat();
 });
 </script>
 
 <style scoped>
-.chat-container {
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
-}
+@keyframes scale-pulse {
 
-.chat-container .layout {
-  display: flex;
-  flex-direction: row;
-  width: 100%;
-  height: 100%;
-  gap: 16px;
-  overflow: hidden;
-}
-
-.main-section {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-  overflow: hidden;
-}
-
-.messages-section {
-  flex: 1;
-  min-height: 0;
-}
-
-.input-section {
-  flex-shrink: 0;
-}
-
-.sidebar-section {
-  width: 260px;
-  flex-shrink: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.info-section {
-  flex-shrink: 0;
-}
-
-.users-section {
-  flex: 1;
-  overflow-y: auto;
-  min-height: 0;
-}
-
-@media (max-width: 767px) {
-  .layout {
-    flex-direction: column;
-    gap: 0;
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 1;
   }
 
-  .sidebar-section {
-    display: none;
+  50% {
+    transform: scale(0.85);
+    opacity: 0.6;
+  }
+}
+
+.animate-scale-pulse {
+  animation: scale-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.dot-loader::after {
+  content: '';
+  display: inline-block;
+  animation: dots 1.5s steps(4, end) infinite;
+}
+
+@keyframes dots {
+
+  0%,
+  20% {
+    content: '';
+  }
+
+  40% {
+    content: '.';
+  }
+
+  60% {
+    content: '..';
+  }
+
+  80%,
+  100% {
+    content: '...';
   }
 }
 </style>

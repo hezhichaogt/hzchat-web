@@ -1,6 +1,6 @@
 import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
-import type { User } from '@/types/user'
+import type { UserProfile } from '@/types/user'
 import { getOrCreateGuestID, loadNickname, saveNickname } from '@/utils/guest'
 
 const IDENTITY_TOKEN_KEY = 'HZCHAT_IDENTITY_TOKEN'
@@ -11,7 +11,7 @@ export const useUserStore = defineStore('user', () => {
   const guestNickname = ref<string | null>(loadNickname())
 
   const identityToken = ref<string | null>(localStorage.getItem(IDENTITY_TOKEN_KEY))
-  const userProfile = ref<User | null>(null)
+  const userProfile = ref<UserProfile | null>(null)
 
   try {
     const savedProfile = localStorage.getItem(USER_PROFILE_KEY)
@@ -24,7 +24,7 @@ export const useUserStore = defineStore('user', () => {
 
   const isLoggedIn = computed(() => !!identityToken.value && !!userProfile.value)
 
-  const profile = computed((): User => {
+  const profile = computed((): UserProfile => {
     if (isLoggedIn.value && userProfile.value) {
       return userProfile.value
     }
@@ -36,6 +36,8 @@ export const useUserStore = defineStore('user', () => {
       nickname: guestNickname.value || defaultNickname,
       avatar: '',
       userType: 'guest',
+      planType: 'FREE',
+      lastLoginAt: null,
     }
   })
 
@@ -49,7 +51,7 @@ export const useUserStore = defineStore('user', () => {
     saveNickname(trimmed)
   }
 
-  function handleLoginSuccess(token: string, userInfo: User) {
+  function handleLoginSuccess(token: string, userInfo: UserProfile) {
     identityToken.value = token
     userProfile.value = { ...userInfo }
 
@@ -73,6 +75,23 @@ export const useUserStore = defineStore('user', () => {
     }
   }
 
+  function updateProfile(userInfo: UserProfile, token?: string) {
+    userProfile.value = { ...userInfo }
+
+    if (token) {
+      identityToken.value = token
+    }
+
+    try {
+      localStorage.setItem(USER_PROFILE_KEY, JSON.stringify(userInfo))
+      if (token) {
+        localStorage.setItem(IDENTITY_TOKEN_KEY, token)
+      }
+    } catch (e) {
+      console.warn('Failed to persist updated profile:', e)
+    }
+  }
+
   return {
     isLoggedIn,
     profile,
@@ -81,5 +100,6 @@ export const useUserStore = defineStore('user', () => {
     setGuestNickname,
     handleLoginSuccess,
     logout,
+    updateProfile,
   }
 })

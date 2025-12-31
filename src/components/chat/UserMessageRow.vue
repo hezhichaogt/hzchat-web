@@ -1,77 +1,93 @@
 <template>
-    <div :class="['message-row', message.isOwn ? 'message-row-own' : 'message-row-other']">
+    <div :class="['flex w-full mb-6 items-start gap-3', message.isOwn ? 'flex-row-reverse' : 'flex-row']">
+        <div class="shrink-0 transition-transform active:scale-95">
+            <Avatar class="h-8 w-8 border border-zinc-200 dark:border-zinc-800 shadow-sm">
+                <AvatarImage v-if="message.sender.avatar" :src="message.sender.avatar" :alt="message.sender.nickname"
+                    class="object-cover" />
 
-        <div class="message-avatar-wrapper">
-            <UserAvatar :user="message.sender" size="small" />
+                <AvatarFallback
+                    class="bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 font-bold text-[10px] select-none uppercase">
+                    {{ message.sender.nickname?.slice(0, 2) || '?' }}
+                </AvatarFallback>
+            </Avatar>
         </div>
 
-        <div class="message-content-wrapper">
-            <div class="message-content">
-                <n-text depth="3" class="nickname">
-                    {{ message.sender.nickname }}
-                </n-text>
+        <div :class="['flex flex-col max-w-[75%] md:max-w-[70%]', message.isOwn ? 'items-end' : 'items-start']">
+            <span class="text-[12px] font-semibold text-zinc-400 mb-1 px-1">
+                {{ message.sender.nickname }}
+            </span>
 
-                <div :class="['message-bubble', message.isOwn ? 'bubble-own' : 'bubble-other']">
-
-                    <div v-if="isAttachments" class="attachment-area">
-                        <div v-for="attachment in displayAttachments" :key="attachment.fileKey" class="attachment-card">
-
-                            <div class="image-wrapper">
-                                <n-image v-if="attachment.mimeType.startsWith('image/')" :src="attachment.url"
-                                    :alt="attachment.fileName" class="preview-image" object-fit="cover"
-                                    :show-toolbar="false" />
-
-                                <div v-else class="file-icon-placeholder">
-                                    <n-icon :size="40">
-                                        <DocumentOutline />
-                                    </n-icon>
-                                </div>
-                            </div>
-
+            <div :class="['flex items-end gap-2 w-full', message.isOwn ? 'flex-row-reverse' : 'flex-row']">
+                <div :class="[
+                    'relative flex flex-col group transition-all duration-200 shadow-xs overflow-hidden flex-1',
+                    message.isOwn
+                        ? 'bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-2xl rounded-tr-none'
+                        : 'bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-2xl rounded-tl-none text-zinc-800 dark:text-zinc-200'
+                ]">
+                    <div v-if="isAttachments" :class="[
+                        'p-1 gap-1 grid w-full',
+                        displayAttachments.length === 1 ? 'grid-cols-1' : '',
+                        displayAttachments.length === 2 ? 'grid-cols-2 w-60' : '',
+                        displayAttachments.length === 3 ? 'grid-cols-3 w-72' : '',
+                        displayAttachments.length === 4 ? 'grid-cols-2 w-60' : '',
+                        displayAttachments.length >= 5 ? 'grid-cols-3 w-72' : ''
+                    ]">
+                        <div v-for="attachment in displayAttachments" :key="attachment.fileKey"
+                            class="relative overflow-hidden rounded-lg cursor-zoom-in group/img bg-zinc-100 dark:bg-zinc-700"
+                            @click="handleImageClick(attachment.url)">
+                            <img :src="attachment.url" :alt="attachment.fileName" :class="[
+                                'object-cover transition-transform duration-500 group-hover/img:scale-105 w-full',
+                                displayAttachments.length === 1 ? 'max-w-full max-h-80' : 'aspect-square'
+                            ]" />
                         </div>
                     </div>
 
-                    <div v-if="message.content.trim()" class="message-text-content">
+                    <div v-if="message.content.trim()"
+                        class="px-3.5 py-2 text-[14px] leading-relaxed wrap-break-word whitespace-pre-wrap">
                         {{ message.content }}
                     </div>
 
-                    <div class="message-time">
-                        <span v-if="shouldShowJustNow">
-                            Just now
-                        </span>
-                        <n-time v-else :time="message.timestamp" :to="currentTime" type="relative" />
+                    <div :class="[
+                        'text-[10px] pb-1.5 px-3 self-end font-medium transition-opacity',
+                        message.isOwn ? 'text-zinc-400 dark:text-zinc-500' : 'text-zinc-400 dark:text-zinc-500'
+                    ]">
+                        {{ relativeTimeText }}
                     </div>
                 </div>
-            </div>
 
-            <div v-if="message.isOwn" class="message-status-wrapper">
-                <n-icon v-if="isPending" size="16" class="sync-icon" title="Sending...">
-                    <SyncOutline />
-                </n-icon>
-                <n-icon v-else-if="isFailed" size="16" @click="handleResendClick" class="resend-icon"
-                    title="Resend message">
-                    <RefreshOutline />
-                </n-icon>
+                <div v-if="message.isOwn" class="shrink-0">
+                    <div v-if="isPending" class="animate-spin text-zinc-400 dark:text-zinc-600">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3">
+                            </circle>
+                            <path class="opacity-75" fill="currentColor"
+                                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+                            </path>
+                        </svg>
+                    </div>
+                    <button v-else-if="isFailed" @click="handleResendClick"
+                        class="flex items-center justify-center transition-transform active:scale-90 p-1 group hover:cursor-pointer"
+                        title="Resend message">
+                        <svg class="w-4 h-4 text-red-500 hover:text-red-600 transition-colors" viewBox="0 0 24 24"
+                            fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+                            stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <line x1="12" y1="8" x2="12" y2="12"></line>
+                            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                        </svg>
+                    </button>
+                </div>
             </div>
         </div>
     </div>
 </template>
 
 <script setup lang="ts">
-//
-// UserMessageRow.vue
-//
-// Single user message row component. Responsible for rendering an individual 
-// user chat bubble.
-//
-
 import { computed } from 'vue';
-import { useThemeVars, NText, NTime, NIcon, NImage } from 'naive-ui';
+import { useRoomStore } from '@/stores/room';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import type { UserMessage } from '@/types/chat';
 import type { Attachment } from '@/types/file';
-import { useRoomStore } from '@/stores/room'
-import { RefreshOutline, SyncOutline, DocumentOutline } from '@vicons/ionicons5';
-import UserAvatar from '../UserAvatar.vue';
 
 const props = defineProps<{
     message: UserMessage;
@@ -79,36 +95,54 @@ const props = defineProps<{
     currentTime: number;
 }>();
 
+const emit = defineEmits(['preview']);
+
 const roomStore = useRoomStore();
-
-const isAttachments = computed(() => !!props.message.attachments && props.message.attachments.length > 0);
-
 const VITE_API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 interface DisplayAttachment extends Attachment {
     url: string;
 }
 
+const isAttachments = computed(() =>
+    !!props.message.attachments && props.message.attachments.length > 0
+);
+
 const displayAttachments = computed<DisplayAttachment[]>(() => {
     const currentToken = roomStore.roomToken;
-
     if (!isAttachments.value || !currentToken) return [];
 
     return props.message.attachments!
         .filter(a => a.mimeType.startsWith('image/'))
-        .map(a => {
-            const presignUrl = `${VITE_API_BASE_URL}/file/presign-download?k=${encodeURIComponent(a.fileKey)}&t=${encodeURIComponent(currentToken)}`;
-
-            return {
-                ...a,
-                url: presignUrl
-            };
-        });
+        .map(a => ({
+            ...a,
+            url: `${VITE_API_BASE_URL}/file/presign-download?k=${encodeURIComponent(a.fileKey)}&t=${encodeURIComponent(currentToken)}`
+        }));
 });
 
 const isPending = computed(() => props.message.isOwn && props.message.status === 'sending');
-
 const isFailed = computed(() => props.message.isOwn && props.message.status === 'failed');
+
+const relativeTimeText = computed(() => {
+    const diffInSeconds = Math.floor((props.currentTime - props.message.timestamp) / 1000);
+
+    if (diffInSeconds < 10) return 'Just now';
+
+    if (diffInSeconds < 60) return `${diffInSeconds}s ago`;
+
+    const diffInMinutes = Math.floor(diffInSeconds / 60);
+    if (diffInMinutes < 60) {
+        return `${diffInMinutes} ${diffInMinutes > 1 ? 'mins' : 'min'} ago`;
+    }
+
+    const diffInHours = Math.floor(diffInMinutes / 60);
+    if (diffInHours < 24) {
+        return `${diffInHours} ${diffInHours > 1 ? 'hours' : 'hour'} ago`;
+    }
+
+    const diffInDays = Math.floor(diffInHours / 24);
+    return `${diffInDays} ${diffInDays > 1 ? 'days' : 'day'} ago`;
+});
 
 const handleResendClick = () => {
     if (isFailed.value && props.onResend) {
@@ -116,181 +150,7 @@ const handleResendClick = () => {
     }
 };
 
-const timeDiffInMinutes = computed(() => {
-    const diff = Math.abs(props.currentTime - props.message.timestamp);
-    return diff / (1000 * 60);
-});
-
-const shouldShowJustNow = computed(() => {
-    return timeDiffInMinutes.value <= 1;
-});
-
-const themeVars = useThemeVars();
-const otherBubbleBackgroundColor = computed(() => themeVars.value.buttonColor2);
-const primaryColor = computed(() => themeVars.value.primaryColor);
-const selfBubbleTextColor = computed(() => themeVars.value.baseColor);
-const errorColor = computed(() => themeVars.value.errorColor);
-const borderColor = computed(() => themeVars.value.borderColor);
+const handleImageClick = (url: string) => {
+    emit('preview', url);
+};
 </script>
-
-<style scoped>
-.message-row {
-    display: flex;
-    align-items: flex-start;
-    width: 100%;
-}
-
-.message-row-own {
-    flex-direction: row-reverse;
-}
-
-.message-avatar-wrapper {
-    flex-shrink: 0;
-    margin-top: 0;
-}
-
-.message-content-wrapper {
-    max-width: 75%;
-}
-
-.message-row-own .message-content-wrapper {
-    display: flex;
-    flex-direction: row-reverse;
-    gap: 4px;
-}
-
-.message-content {
-    display: flex;
-    flex-direction: column;
-}
-
-.message-row-own .message-content {
-    align-items: flex-end;
-}
-
-.message-status-wrapper {
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-end;
-    padding-bottom: 2px;
-}
-
-.message-row-other .message-avatar-wrapper {
-    margin-right: 8px;
-}
-
-.message-row-own .message-avatar-wrapper {
-    margin-left: 8px;
-}
-
-.nickname {
-    font-size: 0.75rem;
-    font-weight: 600;
-    color: var(--n-text-color-3);
-    margin-bottom: 2px;
-}
-
-.message-bubble {
-    padding: 8px 12px;
-    border-radius: 12px;
-    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-    word-break: break-word;
-    overflow-wrap: break-word;
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    white-space: pre-wrap;
-}
-
-.bubble-own {
-    background-color: v-bind(primaryColor);
-    color: v-bind(selfBubbleTextColor);
-    border-top-right-radius: 4px;
-    align-self: flex-end;
-}
-
-.bubble-other {
-    background-color: v-bind(otherBubbleBackgroundColor);
-    border-top-left-radius: 4px;
-}
-
-.message-text-content {
-    white-space: pre-wrap;
-}
-
-.message-content {
-    font-size: 0.875rem;
-}
-
-.message-time {
-    align-self: flex-end;
-    font-size: 10px;
-    font-weight: 500;
-    opacity: 0.7;
-}
-
-.attachment-area {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-}
-
-.attachment-card {
-    width: 100px;
-    height: 100px;
-    border: 1px solid v-bind(borderColor);
-    border-radius: 12px;
-    overflow: hidden;
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    background-color: v-bind(selfBubbleTextColor);
-}
-
-.image-wrapper {
-    width: 100%;
-    height: 100%;
-    overflow: hidden;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    flex-shrink: 0;
-}
-
-.preview-image {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-}
-
-.file-icon-placeholder {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    width: 100%;
-    height: 100%;
-    color: var(--n-text-color-3);
-    background-color: var(--n-color-target);
-}
-
-@keyframes spin {
-    from {
-        transform: rotate(0deg);
-    }
-
-    to {
-        transform: rotate(360deg);
-    }
-}
-
-.sync-icon {
-    color: v-bind(primaryColor);
-    animation: spin 1.2s ease-in-out infinite;
-}
-
-.resend-icon {
-    color: v-bind(errorColor);
-    cursor: pointer;
-}
-</style>

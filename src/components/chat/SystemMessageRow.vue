@@ -1,44 +1,50 @@
 <template>
-    <div class="system-message-wrapper">
-        <n-tag :bordered="false" size="small" round :type="tagType">
-            {{ props.message.content }}
-        </n-tag>
+    <div class="flex justify-center w-full my-3 px-4">
+        <div :class="[
+            'px-3 py-1 text-[11px] font-medium tracking-wide transition-all duration-300 rounded-lg',
+            themeConfig.bg,
+            themeConfig.text,
+            themeConfig.border
+        ]">
+            {{ message.content }}
+        </div>
     </div>
 </template>
 
 <script setup lang="ts">
-//
-// SystemMessageRow.vue
-//
-// System message row component. Renders system notifications or status information 
-// within the chat stream (e.g., user join/leave, connection errors).
-//
-
-import { computed, type PropType } from 'vue';
-import { NTag } from 'naive-ui';
+import { computed } from 'vue';
 import type { SystemMessage } from '@/types/chat';
 
-const props = defineProps({
-    message: {
-        type: Object as PropType<SystemMessage>,
-        required: true,
-    },
-});
+const props = defineProps<{
+    message: SystemMessage;
+}>();
 
-const tagType = computed(() => {
-    switch (props.message.style) {
-        case 'error':
-            return 'error';
-        default:
-            return 'default';
-    }
+const themeConfig = computed(() => {
+    const style = props.message.style || 'default';
+
+    const themes = {
+        default: {
+            bg: 'bg-transparent',
+            text: 'text-zinc-400 dark:text-zinc-500',
+            border: 'border-transparent'
+        },
+        error: {
+            bg: 'bg-red-50/30 dark:bg-red-950/10',
+            text: 'text-red-400 dark:text-red-500/80',
+            border: 'border-transparent'
+        },
+        success: {
+            bg: 'bg-emerald-50/30 dark:bg-emerald-950/10',
+            text: 'text-emerald-500/80 dark:text-emerald-500/60',
+            border: 'border-transparent'
+        },
+        info: {
+            bg: 'bg-blue-50/30 dark:bg-blue-950/10',
+            text: 'text-blue-400 dark:text-blue-500/80',
+            border: 'border-transparent'
+        }
+    };
+
+    return themes[style as keyof typeof themes] || themes.default;
 });
 </script>
-
-<style scoped>
-.system-message-wrapper {
-    display: flex;
-    justify-content: center;
-    margin: 4px 0;
-}
-</style>

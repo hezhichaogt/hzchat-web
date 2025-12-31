@@ -1,82 +1,63 @@
 <template>
-    <div class="messages-container">
-        <n-scrollbar ref="messageContainerRef" @scroll="handleScroll">
-            <div ref="messagesWrapperRef" class="messages-wrapper">
-
+    <main ref="messageContainerRef"
+        class="flex-1 min-h-0 relative bg-zinc-50/50 dark:bg-zinc-950/50 overflow-y-auto custom-scrollbar"
+        @scroll="handleScroll">
+        <div ref="messagesWrapperRef" class="max-w-4xl mx-auto py-4 px-4 md:px-6">
+            <div class="space-y-6">
                 <div v-for="(msg, index) in messages" :key="msg.id || msg.tempId"
-                    :ref="(el) => { if (index === messages.length - 1) lastMessageRef = el as HTMLElement | null; }">
-
+                    :ref="(el) => { if (index === messages.length - 1) lastMessageRef = (el as any); }">
                     <template v-if="msg.messageType === 'user'">
                         <UserMessageRow :message="(msg as UserMessage)" :on-resend="onResend"
-                            :current-time="currentTime" />
+                            :current-time="currentTime" @preview="handleOpenPreview" />
                     </template>
 
                     <template v-else-if="msg.messageType === 'system'">
                         <SystemMessageRow :message="(msg as SystemMessage)" />
                     </template>
-
-                    <template v-else>
-                        <div>
-                            [DEBUG: Unknown message type received]
-                        </div>
-                    </template>
                 </div>
             </div>
-        </n-scrollbar>
-    </div>
+        </div>
+
+        <ImagePreviewer v-model="isPreviewOpen" :src="previewUrl" />
+    </main>
 </template>
 
 <script setup lang="ts">
-//
-// Messages.vue
-//
-// Chat message list component. Responsible for rendering all incoming messages 
-// (user/system) and implementing scroll behavior management.
-//
-
 import { ref, watch, nextTick, onMounted, onUnmounted } from 'vue';
-import { NScrollbar } from 'naive-ui';
 import type { ClientMessage, UserMessage, SystemMessage } from '@/types/chat';
+
 import UserMessageRow from './UserMessageRow.vue';
 import SystemMessageRow from './SystemMessageRow.vue';
+import ImagePreviewer from '../ImagePreviewer.vue';
+
 
 const props = defineProps<{
     messages: ClientMessage[];
     onResend: (message: UserMessage) => void;
 }>();
 
-const messageContainerRef = ref<InstanceType<typeof NScrollbar> | null>(null);
-const messagesWrapperRef = ref<HTMLDivElement | null>(null);
+
+const messageContainerRef = ref<HTMLElement | null>(null);
 const lastMessageRef = ref<HTMLElement | null>(null);
+
 const isNearBottom = ref(true);
+const currentTime = ref(Date.now());
+let intervalId: number | undefined;
 
-const waitForImagesToLoad = async (parentElement: HTMLElement): Promise<void> => {
-    if (!parentElement) return Promise.resolve();
+const isPreviewOpen = ref(false);
+const previewUrl = ref('');
 
-    const images = Array.from(parentElement.querySelectorAll('img')).filter(img => !img.complete);
-
-    if (images.length === 0) {
-        return Promise.resolve();
-    }
-
-    const promises = images.map(img => new Promise<void>((resolve) => {
-        img.onload = () => resolve();
-        img.onerror = () => resolve();
-    }));
-
-    await Promise.all(promises);
+const handleOpenPreview = (url: string) => {
+    previewUrl.value = url;
+    isPreviewOpen.value = true;
 };
 
 const scrollToNewMessage = () => {
-    if (messageContainerRef.value && lastMessageRef.value) {
-        const targetOffsetTop = lastMessageRef.value.offsetTop;
-
-        setTimeout(() => {
-            messageContainerRef.value!.scrollTo({
-                top: targetOffsetTop,
-                behavior: 'smooth',
-            });
-        }, 0);
+    if (lastMessageRef.value) {
+        lastMessageRef.value.scrollIntoView({
+            behavior: 'smooth',
+            block: 'end'
+        });
     }
 };
 
@@ -85,6 +66,7 @@ const handleScroll = (event: Event) => {
     const maxScroll = target.scrollHeight - target.clientHeight;
     const currentScroll = target.scrollTop;
     const threshold = 200;
+
     isNearBottom.value = maxScroll - currentScroll < threshold;
 };
 
@@ -95,50 +77,64 @@ watch(() => props.messages.length, (newLength, oldLength) => {
         const lastMessage = props.messages[newLength - 1];
         let shouldScroll = isNearBottom.value;
 
-        if (lastMessage && lastMessage.messageType === 'user' && (lastMessage as UserMessage).isOwn) {
+        if (
+            lastMessage &&
+            lastMessage.messageType === 'user' &&
+            (lastMessage as UserMessage).isOwn
+        ) {
             shouldScroll = true;
         }
 
         if (shouldScroll) {
-            nextTick(async () => {
-                if (messagesWrapperRef.value) {
-                    await waitForImagesToLoad(messagesWrapperRef.value);
-                }
-
+            nextTick(() => {
                 scrollToNewMessage();
+                setTimeout(scrollToNewMessage, 800);
             });
         }
     }
 }, { immediate: true });
 
-const currentTime = ref(Date.now());
-let intervalId: number | undefined;
 
 onMounted(() => {
+    if (messageContainerRef.value) {
+        messageContainerRef.value.scrollTop = messageContainerRef.value.scrollHeight;
+    }
+
     intervalId = window.setInterval(() => {
         currentTime.value = Date.now();
-    }, 1000 * 15)
-})
+    }, 1000 * 60);
+});
 
 onUnmounted(() => {
-    if (intervalId !== undefined) {
+    if (intervalId) {
         window.clearInterval(intervalId);
     }
-})
+});
 </script>
 
 <style scoped>
-.messages-container {
-    height: 100%;
-    width: 100%;
-    display: flex;
-    flex-direction: column;
+.custom-scrollbar::-webkit-scrollbar {
+    width: 4px;
 }
 
-.messages-wrapper {
-    padding: 16px 12px 16px;
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background-color: rgba(0, 0, 0, 0.1);
+    border-radius: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(0, 0, 0, 0.2);
+}
+
+.dark .custom-scrollbar::-webkit-scrollbar-thumb {
+    background-color: rgba(255, 255, 255, 0.15);
+}
+
+.dark .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(255, 255, 255, 0.25);
+}
+
+.scroll-smooth {
+    scroll-behavior: smooth;
 }
 </style>

@@ -4,9 +4,14 @@
 
 export type UserRole = 'guest' | 'registered' | 'subscriber' | 'admin'
 
-export interface User {
+export interface UserBase {
   id: string
   nickname: string
   avatar: string
   userType: UserRole
+}
+
+export interface UserProfile extends UserBase {
+  planType: string
+  lastLoginAt: string | null
 }

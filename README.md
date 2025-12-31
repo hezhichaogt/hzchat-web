@@ -8,10 +8,10 @@ Our core goal is to provide users with a secure, private, and instantly availabl
 
 ## License and Trust
 
-| Type           | Status                                                                                                                                                                                 |
-| :------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **License**    | [![License](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)                                                                           |
-| **Tech Stack** | [![Vue.js](https://img.shields.io/badge/Vue.js-3.x-4FC08D?logo=vue.js)](https://vuejs.org/) [![Naive UI](https://img.shields.io/badge/UI-Naive%20UI-4FC08D)](https://www.naiveui.com/) |
+| Type           | Status                                                                                                                                                                                                                                                                                                                          |
+| :------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **License**    | [![License](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)                                                                                                                                                                                                                    |
+| **Tech Stack** | [![Vue.js](https://img.shields.io/badge/Vue.js-3.x-4FC08D?logo=vue.js)](https://vuejs.org/) [![Tailwind CSS](https://img.shields.io/badge/CSS-Tailwind%20v4-38B2AC?logo=tailwind-css)](https://tailwindcss.com/) [![Shadcn UI](https://img.shields.io/badge/UI-Shadcn%20%2F%20Reka-000000?logo=shadcnui)](https://reka-ui.com/) |
 
 **Why AGPL v3.0?**
 

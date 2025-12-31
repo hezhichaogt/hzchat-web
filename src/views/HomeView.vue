@@ -1,105 +1,140 @@
 <template>
-  <div class="home-container">
+  <div class="w-full max-w-2xl p-4 flex flex-col gap-8 mx-auto animate-in fade-in zoom-in-95 duration-800">
 
-    <div class="welcome-section">
-      <n-h1 align-text prefix="bar" class="welcome-title">
-        Zero-Record Messaging. Traceless. Start Now.
-      </n-h1>
+    <div class="flex flex-col gap-1.5 md:gap-2">
+      <h1 class="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tighter leading-[1.05] text-foreground">
+        Zero-Record <br />
+        <span class="inline-block text-primary">Messaging.</span>
+        <span class="text-muted-foreground/50 block mt-1 sm:mt-2 font-medium">Traceless. Start Now.</span>
+      </h1>
 
-      <n-text depth="3" class="welcome-desc">
-        No registration required. We never store your conversation content. Open-source verification.
-      </n-text>
+      <p class="text-base sm:text-lg md:text-xl text-muted-foreground/70 leading-relaxed font-medium px-2">
+        No registration. <span class="text-foreground border-b-[1.5px] border-foreground/20 italic">Zero storage</span>.
+        Open-source verification for <span class="text-foreground/90">uncompromising</span> privacy.
+      </p>
     </div>
 
-    <n-card title="Nickname" size="small" class="nickname-section">
-      <n-input v-model:value="nicknameInput" :placeholder="`${getDisplayName}`" :maxlength="16"
-        @blur="handleNicknameChange" clearable />
-      <n-alert type="info" :bordered="false" :show-icon="false" style="margin-top: 6px;">
-        This nickname is stored locally in your browser and is only used as your display name in the chat.
-      </n-alert>
-    </n-card>
+    <section v-if="!userStore.isLoggedIn" class="px-2">
+      <div class="py-2 space-y-2 group">
+        <div class="flex items-baseline gap-2">
+          <span class="flex h-1.5 w-1.5 rounded-full bg-emerald-500/60 animate-pulse"></span>
+          <Label for="guest-nickname" class="text-[12px] font-black tracking-[0.2em] uppercase opacity-50">
+            Identity
+          </Label>
+          <span class="text-[12px] text-muted-foreground/30 italic font-medium">
+            Stored locally.
+          </span>
+        </div>
 
-    <div class="create-chat-section">
-      <n-flex size="large" align="center" class="create-chat-actions">
-        <n-button type="primary" size="large" style="flex: 1;" :loading="isBusy" :disabled="isBusy"
-          @click="createPrivateChat">
-          <template #icon>
-            <n-icon :component="ChatboxOutline" />
-          </template>
-          Create Private Chat
-        </n-button>
+        <div class="group/item">
+          <Input id="guest-nickname" v-model="nicknameInput" :placeholder="userStore.getDisplayName" maxlength="16"
+            class="h-10 px-0 bg-transparent border-0 border-b border-muted-foreground/20 group-hover/item:border-muted-foreground/40 rounded-none focus-visible:ring-0 focus-visible:border-foreground transition-all text-base font-medium"
+            @blur="handleNicknameChange" />
+        </div>
+      </div>
+    </section>
 
-        <n-button type="default" size="large" style="flex: 1;" :loading="isBusy" :disabled="isBusy"
-          @click="createGroupChat">
-          <template #icon>
-            <n-icon :component="PeopleOutline" />
-          </template>
-          Create Group Chat
-        </n-button>
-      </n-flex>
-    </div>
+    <div class="flex flex-col gap-6">
+      <div class="flex flex-col sm:flex-row gap-4 px-2">
+        <Button size="lg"
+          class="w-full sm:flex-1 h-14 text-base font-extrabold transition-all active:scale-[0.97] shadow-md hover:cursor-pointer"
+          @click="createPrivateChat" :disabled="isBusy">
+          <div class="flex items-center justify-center w-full gap-2">
+            <Loader2 v-if="isBusy" class="mr-3 h-5 w-5 animate-spin" />
+            <MessageSquare v-else class="mr-3 h-5 w-5" />
+            <span>Create Private Chat</span>
+          </div>
+        </Button>
 
-    <n-divider dashed style="margin: 8px 0;">OR</n-divider>
+        <Button variant="outline" size="lg"
+          class="w-full sm:flex-1 h-14 text-base font-bold border-2 transition-all active:scale-[0.97] hover:cursor-pointer"
+          @click="createGroupChat" :disabled="isBusy">
+          <div class="flex items-center justify-center w-full gap-2">
+            <Loader2 v-if="isBusy" class="mr-3 h-5 w-5 animate-spin" />
+            <Users v-else class="mr-3 h-5 w-5 opacity-70" />
+            <span>Create Group Chat</span>
+          </div>
+        </Button>
+      </div>
 
-    <div class="join-chat-section">
-      <n-input-group>
-        <n-input v-model:value="chatCodeInput" size="large" placeholder="Enter Chat Code to Join" :loading="isBusy"
-          :disabled="isBusy" maxlength="6" clearable />
-        <n-button type="primary" size="large" attr-type="submit" :disabled="isBusy" :loading="isBusy"
-          @click="handleJoinChat">
-          <template #icon>
-            <n-icon :component="LogInOutline" />
-          </template>
-          Join
-        </n-button>
-      </n-input-group>
+      <div class="relative py-4 flex items-center justify-center">
+        <div class="absolute inset-x-0 h-px bg-linear-to-r from-transparent via-muted-foreground/30 to-transparent">
+        </div>
+
+        <span
+          class="relative bg-background px-6 text-[10px] uppercase font-black tracking-[0.4em] text-muted-foreground/40">
+          OR
+        </span>
+      </div>
+
+      <div class="px-2">
+        <InputGroup class="h-14">
+          <InputGroupInput v-model="chatCodeInput" placeholder="ENTER CHAT CODE" maxlength="6"
+            class="px-6 md:px-4 font-mono uppercase tracking-[0.3em] focus-visible:ring-0 placeholder:font-sans placeholder:tracking-normal placeholder:text-sm placeholder:opacity-40 text-xl!"
+            :disabled="isBusy" />
+
+          <InputGroupAddon align="inline-end" class="pr-4">
+            <InputGroupButton @click="handleJoinChat" :disabled="isBusy || chatCodeInput.length < 6" variant="secondary"
+              size="sm" class="hover:cursor-pointer">
+              <Loader2 v-if="isBusy" class="size-5 animate-spin" />
+              <template v-else>
+                <div class="flex justify-center items-center">
+                  <span class="text-base">JOIN</span>
+                  <ChevronRight class="size-5" />
+                </div>
+              </template>
+            </InputGroupButton>
+          </InputGroupAddon>
+        </InputGroup>
+      </div>
+
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-//
-// The application's entry-point view component. Responsible for guiding users 
-// to start a chat. Key functionalities include:
-// 1. Identity Setup: Allows users to set and persist a nickname (via GuestStore).
-// 2. Create Chat: Triggers the backend API (createChat) to initiate a new 
-//    private or group chat session and navigates to `/chat/:code`.
-// 3. Join Chat: Allows users to enter a chat code, check session status 
-//    (checkChatStatus), and join.
-// 4. UI/UX: Provides a clear process for creation and joining, along with 
-//    loading state management.
-//
 import { ref, watch } from 'vue';
-import { storeToRefs } from 'pinia';
 import { useRouter } from 'vue-router';
-import { useMessage, NFlex, NH1, NText, NDivider, NInputGroup, NCard, NInput, NIcon, NButton, NAlert } from 'naive-ui';
-import { ChatboxOutline, PeopleOutline, LogInOutline } from '@vicons/ionicons5';
-import type { ChatType } from '@/types/chat';
+import { storeToRefs } from 'pinia';
+import { useHead } from '@unhead/vue';
+import { toast } from 'vue-sonner';
+
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  InputGroup,
+  InputGroupInput,
+  InputGroupAddon,
+  InputGroupButton
+} from '@/components/ui/input-group';
+
+import {
+  Loader2,
+  Users,
+  MessageSquare,
+  ChevronRight
+} from 'lucide-vue-next';
+
 import { useUserStore } from '@/stores/user';
 import { createChat, joinChat } from '@/services/chat';
-import { useHead } from '@unhead/vue';
+import type { ChatType } from '@/types/chat';
 
-//
-// SEO
-//
 useHead({
   meta: [
     {
       name: 'description',
-      content: 'HZ Chat offers traceless, instant messaging with a strict zero-record policy. Create a temporary, low-social-burden room for private, thematic discussions. No signup needed.',
+      content: 'Traceless, instant messaging without the footprint. Create temporary rooms for private chats in seconds. No signup, no storage, no burden. HZ Chat: Say it, then it\'s gone.',
     }
   ],
 });
 
-const message = useMessage();
 const router = useRouter();
-
 const userStore = useUserStore();
-const { profile, getDisplayName } = storeToRefs(userStore);
+const { profile } = storeToRefs(userStore);
 
-//
-// Nickname
-// 
+const isBusy = ref(false);
+const chatCodeInput = ref('');
 const nicknameInput = ref(profile.value.nickname || '');
 
 watch(() => profile.value.nickname, (newVal) => {
@@ -114,7 +149,7 @@ const handleNicknameChange = () => {
 
   const validRegex = /^[\p{L}\p{N}_?!-]{1,16}$/u;
   if (trimmedInput && !validRegex.test(trimmedInput)) {
-    message.error('Invalid nickname. Must be 1-16 chars.');
+    toast.error('Invalid nickname. Use 1-16 letters, numbers or underscores.');
     nicknameInput.value = currentNickname || '';
     return;
   }
@@ -122,17 +157,12 @@ const handleNicknameChange = () => {
   userStore.setGuestNickname(trimmedInput);
 
   if (trimmedInput) {
-    message.success(`Nickname saved.`);
+    toast.success('Identity updated.');
   } else {
-    message.info('Nickname cleared. Using temporary ID.');
+    toast.info('Using anonymous ID.');
   }
 };
 
-const isBusy = ref(false);
-
-//
-// Create Chat
-//
 const handleCreateChat = async (type: ChatType) => {
   if (isBusy.value) return;
   isBusy.value = true;
@@ -141,7 +171,7 @@ const handleCreateChat = async (type: ChatType) => {
     const { chatCode } = await createChat(type);
     router.push(`/chat/${chatCode}`);
   } catch (error: any) {
-    message.error(`Failed to create chat: ${error.message || 'Unknown error'}`);
+    toast.error(`Creation failed: ${error.message || 'Server error'}`);
   } finally {
     isBusy.value = false;
   }
@@ -150,22 +180,17 @@ const handleCreateChat = async (type: ChatType) => {
 const createPrivateChat = () => handleCreateChat('private');
 const createGroupChat = () => handleCreateChat('group');
 
-//
-// Join Chat
-//
-const chatCodeInput = ref('');
-
 const handleJoinChat = async () => {
   const trimmedCode = chatCodeInput.value.trim();
   const REQUIRED_LENGTH = 6;
 
   if (!trimmedCode) {
-    message.warning('Please enter a chat code.');
+    toast.warning('Please enter a chat code.');
     return;
   }
 
   if (trimmedCode.length !== REQUIRED_LENGTH) {
-    message.error(`Chat code must be exactly ${REQUIRED_LENGTH} characters.`);
+    toast.error(`Code must be exactly ${REQUIRED_LENGTH} characters.`);
     return;
   }
 
@@ -174,7 +199,6 @@ const handleJoinChat = async () => {
 
   try {
     const { token } = await joinChat(trimmedCode);
-
     if (!token) throw new Error('No access token received.');
 
     router.push({
@@ -182,62 +206,9 @@ const handleJoinChat = async () => {
       state: { token }
     });
   } catch (error: any) {
-    message.error(`Failed to join chat: ${error.message}`);
+    toast.error(`Join failed: ${error.message}`);
   } finally {
     isBusy.value = false;
   }
 };
 </script>
-
-<style scoped>
-.home-container {
-  width: 100%;
-  max-width: 500px;
-  margin: 0 auto;
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  justify-content: flex-start;
-  padding: 16px;
-}
-
-.welcome-title {
-  font-size: 26px;
-  margin-bottom: 8px;
-}
-
-.welcome-desc {
-  font-size: 16px;
-}
-
-.nickname-section {
-  margin: 16px 0;
-}
-
-.collapse {
-  margin-top: 8px;
-  user-select: none;
-}
-
-@media (max-width: 639px) {
-  .create-chat-actions {
-    flex-direction: column;
-  }
-}
-
-@media (min-width: 640px) {
-  .home-container {
-    margin-top: 80px;
-    gap: 24px;
-  }
-
-  .welcome-section {
-    padding: 0;
-  }
-
-  .welcome-title {
-    font-size: 30px;
-  }
-}
-</style>

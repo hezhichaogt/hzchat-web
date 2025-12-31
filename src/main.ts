@@ -1,6 +1,5 @@
 import './base.css'
-import 'vfonts/Lato.css'
-import 'vfonts/FiraCode.css'
+import 'vue-sonner/style.css'
 
 import { createApp } from 'vue'
 import App from './App.vue'
@@ -56,7 +55,8 @@ head.push({
     },
     {
       name: 'viewport',
-      content: 'width=device-width, initial-scale=1, maximum-scale=1.0, minimum-scale=1.0',
+      content:
+        'width=device-width, initial-scale=1, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no',
     },
   ],
 })
