@@ -14,4 +14,5 @@ export interface UserBase {
 export interface UserProfile extends UserBase {
   planType: string
   lastLoginAt: string | null
+  email: string
 }

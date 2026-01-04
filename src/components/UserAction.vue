@@ -28,12 +28,12 @@
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem @click="router.push('/settings')">
-                    <Settings class="mr-2 h-4 w-4" />
+                    <Settings class="mr-0.5 h-4 w-4" />
                     <span>Settings</span>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem @click="handleLogout" class="text-destructive focus:text-destructive">
-                    <LogOut class="mr-2 h-4 w-4" />
+                    <LogOut class="mr-0.5 h-4 w-4" />
                     <span>Sign out</span>
                 </DropdownMenuItem>
             </DropdownMenuContent>

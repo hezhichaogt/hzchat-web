@@ -2,8 +2,9 @@
     <Dialog v-model:open="isOpen">
         <DialogTrigger as-child>
             <slot>
-                <Button variant="outline" class="hover:cursor-pointer">
-                    Change Password
+                <Button variant="ghost" size="sm"
+                    class="h-8 px-3 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors">
+                    Change
                 </Button>
             </slot>
         </DialogTrigger>
