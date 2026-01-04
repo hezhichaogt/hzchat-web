@@ -1,5 +1,5 @@
 <template>
-    <div class="flex items-center gap-4">
+    <div v-if="!isSettingsPage" class="flex items-center gap-4">
         <DropdownMenu v-if="userStore.isLoggedIn">
             <DropdownMenuTrigger as-child>
                 <button
@@ -49,7 +49,8 @@
 </template>
 
 <script setup lang="ts">
-import { useRouter } from 'vue-router';
+import { computed } from 'vue';
+import { useRouter, useRoute } from 'vue-router';
 import { useUserStore } from '@/stores/user';
 import { LogOut, Settings, UserCircle } from 'lucide-vue-next';
 import { Button } from '@/components/ui/button';
@@ -65,7 +66,10 @@ import {
 
 
 const router = useRouter();
+const route = useRoute();
 const userStore = useUserStore();
+
+const isSettingsPage = computed(() => route.path === '/settings');
 
 const getGreeting = () => {
     const hour = new Date().getHours();
