@@ -48,3 +48,33 @@ export async function presignAvatar(params: PresignAvatarParams): Promise<Presig
 
   return await post<PresignAvatarResponse>(url, params)
 }
+
+interface SendEmailCodeParams {
+  email: string
+  password: string
+  turnstileToken: string
+}
+
+export async function sendEmailCode(params: SendEmailCodeParams): Promise<void> {
+  const url = '/user/email/send-code'
+  return await post<void>(url, params)
+}
+
+interface BindEmailParams {
+  email: string
+  code: string
+}
+
+export async function bindEmail(params: BindEmailParams): Promise<void> {
+  const url = '/user/email/bind'
+  return await post<void>(url, params)
+}
+
+interface UnbindEmailParams {
+  password: string
+}
+
+export async function unbindEmail(params: UnbindEmailParams): Promise<void> {
+  const url = '/user/email/unbind'
+  return await post<void>(url, params)
+}

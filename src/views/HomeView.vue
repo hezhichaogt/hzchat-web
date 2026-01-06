@@ -1,5 +1,5 @@
 <template>
-  <div class="w-full max-w-2xl p-4 flex flex-col gap-8 mx-auto animate-in fade-in zoom-in-95 duration-800">
+  <div class="w-full max-w-2xl px-1 py-4 flex flex-col gap-8 mx-auto animate-in fade-in zoom-in-95 duration-800">
 
     <div class="flex flex-col gap-1.5 md:gap-2">
       <h1 class="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tighter leading-[1.05] text-foreground">

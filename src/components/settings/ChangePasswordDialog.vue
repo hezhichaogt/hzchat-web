@@ -5,6 +5,8 @@
                 <Button variant="ghost" size="sm"
                     class="h-8 px-3 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors">
                     Change
+                    <ChevronRight
+                        class="ml-0.5 size-3.5 opacity-50 group-hover/btn:translate-x-0.5 transition-transform" />
                 </Button>
             </slot>
         </DialogTrigger>
@@ -70,7 +72,7 @@ import {
     FormControl, FormField, FormItem,
     FormLabel, FormMessage
 } from '@/components/ui/form';
-import { Loader2 } from 'lucide-vue-next';
+import { Loader2, ChevronRight } from 'lucide-vue-next';
 import { toast } from 'vue-sonner';
 
 import { changePassword } from '@/services/auth';

@@ -115,9 +115,20 @@
                     </span>
                 </div>
 
-                <div class="flex items-center">
-                    <ChangePasswordDialog />
+                <ChangePasswordDialog />
+            </div>
+
+            <div class="flex items-center justify-between py-4 border-b border-muted/40 px-1 group">
+                <div class="flex items-center gap-2.5 select-none">
+                    <div class="p-2 bg-secondary/50 rounded-lg transition-colors">
+                        <Mail class="size-4 text-muted-foreground transition-colors" />
+                    </div>
+                    <span class="text-sm font-medium text-foreground/90 tracking-tight">
+                        Email
+                    </span>
                 </div>
+
+                <EmailManageDialog :email="userStore.profile.email" />
             </div>
         </section>
     </div>
@@ -138,8 +149,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Loader2, ChevronLeft, Lock, User2, Upload, Type } from 'lucide-vue-next';
+import { Loader2, ChevronLeft, Lock, User2, Upload, Type, Mail } from 'lucide-vue-next';
+
 import ChangePasswordDialog from '@/components/settings/ChangePasswordDialog.vue';
+import EmailManageDialog from '@/components/settings/EmailManageDialog.vue';
 
 
 const router = useRouter();
