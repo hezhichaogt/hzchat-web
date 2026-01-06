@@ -28,8 +28,10 @@
                             <FormLabel class="text-xs font-bold uppercase tracking-widest text-zinc-500/90">
                                 Password
                             </FormLabel>
-                            <a href="#" class="text-xs text-zinc-400 hover:text-zinc-900 transition-colors">Forgot
-                                password?</a>
+                            <button type="button" @click="$emit('forgot-password')"
+                                class="text-xs text-zinc-400 hover:text-zinc-900 transition-colors hover:cursor-pointer">
+                                Forgot password?
+                            </button>
                         </div>
                         <FormControl>
                             <Input type="password" placeholder="••••••••" v-bind="componentField"
@@ -77,6 +79,11 @@ import {
 
 import { useUserStore } from '@/stores/user';
 import { login } from '@/services/auth';
+
+
+defineEmits<{
+    (e: 'forgot-password'): void
+}>();
 
 
 const loginSchema = toTypedSchema(
