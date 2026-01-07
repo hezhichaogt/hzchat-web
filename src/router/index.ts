@@ -16,6 +16,7 @@ const FAQView = () => import('@/views/FAQView.vue')
 const AboutView = () => import('@/views/AboutView.vue')
 const AuthView = () => import('@/views/AuthView.vue')
 const SettingsView = () => import('@/views/SettingsView.vue')
+const ResetPasswordView = () => import('@/views/ResetPasswordView.vue')
 
 const routes: Array<RouteRecordRaw> = [
   {
@@ -66,6 +67,11 @@ const routes: Array<RouteRecordRaw> = [
     component: AuthView,
   },
   {
+    path: '/reset-password',
+    name: 'ResetPassword',
+    component: ResetPasswordView,
+  },
+  {
     path: '/:catchAll(.*)',
     redirect: '/',
   },
@@ -80,7 +86,7 @@ router.beforeEach((to, from, next) => {
   const userStore = useUserStore()
   const isLoggedIn = userStore.isLoggedIn
 
-  if (to.name === 'Auth' && isLoggedIn) {
+  if ((to.name === 'Auth' || to.name === 'ResetPassword') && isLoggedIn) {
     return next('/')
   }
 

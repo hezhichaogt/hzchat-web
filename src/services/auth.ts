@@ -53,3 +53,26 @@ export async function changePassword(
 
   return await post<ChangePasswordResponse>(url, params)
 }
+
+interface SendResetEmailParams {
+  email: string
+  turnstileToken: string
+}
+
+export async function sendResetEmail(params: SendResetEmailParams): Promise<void> {
+  const url = '/auth/password-reset/request'
+
+  return await post<void>(url, params)
+}
+
+interface ResetPasswordConfirmParams {
+  token: string
+  newPassword: string
+  turnstileToken: string
+}
+
+export async function resetPasswordConfirm(params: ResetPasswordConfirmParams): Promise<void> {
+  const url = '/auth/password-reset/confirm'
+
+  return await post<void>(url, params)
+}

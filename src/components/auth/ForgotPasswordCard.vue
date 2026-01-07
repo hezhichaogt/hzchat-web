@@ -88,6 +88,8 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 
+import { sendResetEmail } from '@/services/auth';
+
 defineEmits(['back']);
 
 const isLoading = ref(false);
@@ -123,7 +125,11 @@ onMounted(() => renderTurnstile());
 const onSubmit = resetForm.handleSubmit(async (values) => {
     isLoading.value = true;
     try {
-        await new Promise(resolve => setTimeout(resolve, 1500));
+        await sendResetEmail({
+            email: values.email,
+            turnstileToken: turnstileToken.value
+        });
+
         isSent.value = true;
         toast.success('Password reset link sent.');
     } catch (error: any) {
