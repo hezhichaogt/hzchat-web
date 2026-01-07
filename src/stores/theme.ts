@@ -3,23 +3,45 @@
 //
 
 import { defineStore } from 'pinia'
+import { ref, watch } from 'vue'
 
-interface ThemeState {
-  isDark: boolean
-}
+export type Theme = 'light' | 'dark' | 'system'
 
-export const useThemeStore = defineStore('theme', {
-  state: (): ThemeState => ({
-    isDark: false,
-  }),
+export const useThemeStore = defineStore('theme', () => {
+  const theme = ref<Theme>((localStorage.getItem('hzchat-theme') as Theme) || 'system')
+  const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
 
-  getters: {
-    getIsDark: (state) => state.isDark,
-  },
+  const applyTheme = (isInitial = false) => {
+    const root = document.documentElement
+    const isDark = theme.value === 'dark' || (theme.value === 'system' && mediaQuery.matches)
 
-  actions: {
-    setIsDark(value: boolean) {
-      this.isDark = false
-    },
-  },
+    if (isInitial) {
+      root.classList.add('suppress-transition')
+      root.classList.toggle('dark', isDark)
+      void root.offsetHeight
+      root.classList.remove('suppress-transition')
+    } else {
+      root.classList.toggle('dark', isDark)
+    }
+  }
+
+  const handleSystemChange = () => {
+    if (theme.value === 'system') applyTheme()
+  }
+
+  const initSystemListener = () => {
+    mediaQuery.addEventListener('change', handleSystemChange)
+  }
+
+  watch(theme, (newTheme) => {
+    localStorage.setItem('hzchat-theme', newTheme)
+    applyTheme()
+  })
+
+  return {
+    theme,
+    applyTheme,
+    initSystemListener,
+    setTheme: (t: Theme) => (theme.value = t),
+  }
 })

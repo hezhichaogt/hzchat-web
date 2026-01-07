@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-dvh transition-colors duration-300">
+  <div class="min-h-dvh">
     <router-view />
     <Toaster position="top-center" richColors />
   </div>
@@ -10,11 +10,16 @@ import { onMounted } from 'vue';
 import { RouterView } from 'vue-router';
 import { Toaster } from 'vue-sonner';
 import { useUserStore } from '@/stores/user';
+import { useThemeStore } from '@/stores/theme';
 import { getUserProfile } from '@/services/user';
 
 const userStore = useUserStore();
+const themeStore = useThemeStore();
 
 onMounted(async () => {
+  themeStore.applyTheme(true);
+  themeStore.initSystemListener();
+
   if (!userStore.identityToken) return;
 
   try {

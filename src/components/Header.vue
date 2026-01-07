@@ -8,7 +8,7 @@
     )">
       <Logo />
 
-      <div class="flex items-center justify-end">
+      <div class="flex items-center justify-end gap-2">
         <slot name="actions" />
       </div>
     </div>

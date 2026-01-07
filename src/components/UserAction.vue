@@ -1,49 +1,48 @@
 <template>
-    <div v-if="!isSettingsPage" class="flex items-center gap-4">
+    <div v-if="!isSettingsPage" class="flex items-center">
         <DropdownMenu v-if="userStore.isLoggedIn">
             <DropdownMenuTrigger as-child>
-                <button
-                    class="flex items-center gap-2 outline-none hover:opacity-80 transition-opacity hover:cursor-pointer">
-                    <Avatar class="h-10 w-10 border">
+                <Button variant="ghost" size="icon" class="h-9 w-9 rounded-full focus-visible:ring-0 overflow-hidden">
+                    <Avatar class="h-full w-full scale-90 transition-transform active:scale-75">
                         <AvatarImage :src="userStore.profile.avatar || ''" :alt="userStore.profile.nickname" />
-                        <AvatarFallback class="bg-primary/10 text-xs text-primary">
+                        <AvatarFallback class="bg-primary/5 text-[10px] font-bold text-primary/80">
                             {{ userStore.profile.nickname?.slice(0, 2).toUpperCase() || '??' }}
                         </AvatarFallback>
                     </Avatar>
-                </button>
+                </Button>
             </DropdownMenuTrigger>
 
-            <DropdownMenuContent align="end"
-                class="w-24 mt-2 z-100 bg-white dark:bg-zinc-950 opacity-100 shadow-xl border border-border">
-                <DropdownMenuLabel class="font-normal p-2">
-                    <div class="flex flex-col gap-1">
-                        <p class="text-xs text-muted-foreground leading-none">
-                            {{ getGreeting() }},
-                        </p>
-                        <p class="text-sm font-semibold leading-none truncate w-full"
-                            :title="userStore.profile.nickname">
+            <DropdownMenuContent align="end" :side-offset="8"
+                class="w-40 backdrop-blur-xl bg-popover/90 border-border/50 shadow-xl">
+                <DropdownMenuLabel class="px-3 pt-2 pb-1 font-normal">
+                    <div class="flex flex-col gap-0.5">
+                        <span class="text-[10px] uppercase tracking-wider text-muted-foreground/70 font-semibold">
+                            {{ getGreeting() }}
+                        </span>
+                        <span class="text-sm font-bold truncate text-foreground">
                             {{ userStore.profile.nickname }}
-                        </p>
+                        </span>
                     </div>
                 </DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem @click="router.push('/settings')">
-                    <Settings class="mr-0.5 h-4 w-4" />
-                    <span>Settings</span>
+                <DropdownMenuSeparator class="bg-border/40" />
+                <DropdownMenuItem @click="router.push('/settings')" class="px-3 py-2 cursor-pointer">
+                    <Settings class="h-4 w-4 opacity-70" />
+                    <span class="text-sm font-medium">Settings</span>
                 </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem @click="handleLogout" class="text-destructive focus:text-destructive">
-                    <LogOut class="mr-0.5 h-4 w-4" />
-                    <span>Sign out</span>
+                <DropdownMenuSeparator class="bg-border/40" />
+                <DropdownMenuItem @click="handleLogout"
+                    class="px-3 py-2 cursor-pointer text-destructive focus:text-destructive">
+                    <LogOut class="h-4 w-4" />
+                    <span class="text-sm font-medium">Sign out</span>
                 </DropdownMenuItem>
             </DropdownMenuContent>
         </DropdownMenu>
 
-        <Button v-else variant="ghost" size="lg"
-            class="h-9 px-4 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+        <Button v-else variant="ghost" size="icon"
+            class="h-9 w-9 rounded-full focus-visible:ring-0 text-foreground/90 hover:bg-muted"
             @click="router.push('/auth')">
-            <UserCircle class="mr-1 size-5" />
-            <span class="font-medium">Sign in</span>
+            <UserCircle class="h-[1.15rem] w-[1.15rem]" />
+            <span class="sr-only">Sign in</span>
         </Button>
     </div>
 </template>

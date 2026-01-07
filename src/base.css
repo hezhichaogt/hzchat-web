@@ -45,6 +45,7 @@
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
   --ring: oklch(0.552 0.016 285.938);
+  color-scheme: dark;
 }
 
 @theme inline {
@@ -75,7 +76,7 @@
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground transition-colors duration-500 ease-in-out;
     min-height: 100vh;
     line-height: 1.6;
     font-family:
@@ -86,4 +87,12 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
+}
+
+.suppress-transition * {
+  transition: none !important;
+}
+
+.dark img {
+  filter: brightness(0.9) contrast(1.1);
 }

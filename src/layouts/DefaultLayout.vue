@@ -3,6 +3,7 @@
 
     <Header>
       <template #actions>
+        <ThemeToggle />
         <UserAction />
       </template>
     </Header>
@@ -22,4 +23,5 @@ import { RouterView } from 'vue-router';
 import Header from '@/components/Header.vue';
 import Footer from '@/components/Footer.vue';
 import UserAction from '@/components/UserAction.vue';
+import ThemeToggle from '@/components/ThemeToggle.vue';
 </script>
