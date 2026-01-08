@@ -2,11 +2,18 @@
     <Teleport to="body">
         <Transition name="preview-fade">
             <div v-if="modelValue"
-                class="fixed inset-0 z-999 flex items-center justify-center bg-zinc-950/80 backdrop-blur-md cursor-zoom-out"
+                class="fixed inset-0 z-1000 flex items-center justify-center bg-black/80 dark:bg-zinc-950/90 backdrop-blur-xl cursor-zoom-out"
                 @click="close">
-                <div class="relative w-full h-full flex items-center justify-center p-4 md:p-12">
-                    <img :src="src" class="max-w-full max-h-full object-contain select-none shadow-2xl rounded-sm 
-                   ring-1 ring-white/10 cursor-default transition-transform duration-300" @click.stop alt="Preview" />
+
+                <button class="absolute top-6 right-6 p-2 text-white/50 hover:text-white transition-colors"
+                    @click="close">
+                    <X class="w-6 h-6" />
+                </button>
+
+                <div class="relative w-full h-full flex items-center justify-center p-4 md:p-12 overflow-hidden">
+                    <img :src="src" class="max-w-[95%] max-h-[95%] object-contain select-none shadow-[0_0_50px_rgba(0,0,0,0.5)] 
+                               rounded-lg border border-white/10 cursor-default transition-all duration-300"
+                        @click.stop alt="Preview" />
                 </div>
             </div>
         </Transition>
@@ -15,6 +22,7 @@
 
 <script setup lang="ts">
 import { watch } from 'vue';
+import { X } from 'lucide-vue-next';
 
 const props = defineProps<{
     modelValue: boolean;
@@ -23,11 +31,9 @@ const props = defineProps<{
 
 const emit = defineEmits(['update:modelValue']);
 
-
 const close = () => {
     emit('update:modelValue', false);
 };
-
 
 watch(() => props.modelValue, (isOpen) => {
     if (isOpen) {
@@ -39,7 +45,6 @@ watch(() => props.modelValue, (isOpen) => {
     }
 });
 
-
 const handleKeyDown = (e: KeyboardEvent) => {
     if (e.key === 'Escape') {
         close();
@@ -50,16 +55,28 @@ const handleKeyDown = (e: KeyboardEvent) => {
 <style scoped>
 .preview-fade-enter-active,
 .preview-fade-leave-active {
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: opacity 0.3s ease, backdrop-filter 0.3s ease;
 }
 
 .preview-fade-enter-from,
 .preview-fade-leave-to {
     opacity: 0;
-    backdrop-filter: blur(0);
+    backdrop-filter: blur(0px);
+}
+
+.preview-fade-enter-active img {
+    transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.preview-fade-leave-active img {
+    transition: transform 0.2s ease-in;
 }
 
 .preview-fade-enter-from img {
-    transform: scale(0.9);
+    transform: scale(0.95);
+}
+
+.preview-fade-leave-to img {
+    transform: scale(1.02);
 }
 </style>

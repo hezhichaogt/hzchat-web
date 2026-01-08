@@ -1,10 +1,8 @@
 <template>
-    <div class="flex justify-center w-full my-3 px-4">
+    <div class="flex justify-center w-full my-8 px-10">
         <div :class="[
-            'px-3 py-1 text-[11px] font-medium tracking-wide transition-all duration-300 rounded-lg',
-            themeConfig.bg,
-            themeConfig.text,
-            themeConfig.border
+            'text-[12px] transition-all duration-300 text-center leading-relaxed max-w-[80%]',
+            themeConfig.text
         ]">
             {{ message.content }}
         </div>
@@ -24,24 +22,16 @@ const themeConfig = computed(() => {
 
     const themes = {
         default: {
-            bg: 'bg-transparent',
-            text: 'text-zinc-400 dark:text-zinc-500',
-            border: 'border-transparent'
+            text: 'text-zinc-500/80 font-medium dark:text-zinc-400/50'
         },
         error: {
-            bg: 'bg-red-50/30 dark:bg-red-950/10',
-            text: 'text-red-400 dark:text-red-500/80',
-            border: 'border-transparent'
+            text: 'text-red-600/70 font-semibold dark:text-red-400/50'
         },
         success: {
-            bg: 'bg-emerald-50/30 dark:bg-emerald-950/10',
-            text: 'text-emerald-500/80 dark:text-emerald-500/60',
-            border: 'border-transparent'
+            text: 'text-emerald-700/70 font-semibold dark:text-emerald-500/50'
         },
         info: {
-            bg: 'bg-blue-50/30 dark:bg-blue-950/10',
-            text: 'text-blue-400 dark:text-blue-500/80',
-            border: 'border-transparent'
+            text: 'text-blue-600/70 font-semibold dark:text-blue-400/50'
         }
     };
 

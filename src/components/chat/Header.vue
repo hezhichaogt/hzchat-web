@@ -1,8 +1,7 @@
 <template>
-    <header class="w-full h-14 shrink-0 px-4 flex items-center justify-between z-20 
-         sticky top-0
-         bg-white/60 dark:bg-zinc-950/60 backdrop-blur-xl
-         border-b border-zinc-200/30 dark:border-zinc-800/30">
+    <header class="w-full h-14 shrink-0 px-4 flex items-center justify-between
+         bg-background/80 backdrop-blur-xl
+         border-b border-border/40">
 
         <div class="flex items-center">
             <TooltipProvider>
@@ -16,55 +15,54 @@
                             ]"></div>
                         </div>
                     </TooltipTrigger>
-                    <TooltipContent side="bottom" class="text-xs">
+                    <TooltipContent side="bottom" class="shadow-xl z-50">
                         <p><span class="font-bold">{{ statusText }}</span>: {{ statusDetail }}</p>
                     </TooltipContent>
                 </Tooltip>
             </TooltipProvider>
 
             <button @click="copyToClipboard(code || '', 'Code copied')"
-                class="px-1 py-1 rounded md:px-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors active:scale-95 group">
-                <span
-                    class="text-sm font-mono font-bold tracking-tight text-zinc-700 dark:text-zinc-300 flex items-center gap-1.5">
+                class="px-1 py-1 rounded md:px-2 hover:bg-muted/80 transition-colors active:scale-95 group">
+                <span class="text-sm font-mono font-bold tracking-tight text-foreground flex items-center gap-1.5">
                     {{ code || 'LOADING' }}
-                    <Copy class="w-3 h-3 text-zinc-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <Copy class="w-3 h-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
                 </span>
             </button>
         </div>
 
         <div class="flex items-center gap-1 sm:gap-2">
-
             <Popover>
                 <PopoverTrigger as-child>
                     <Button variant="ghost" size="sm"
-                        class="h-9 px-3 gap-1.5 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded transition-all active:scale-95 group">
-                        <Users
-                            class="h-4 w-4 text-zinc-500 group-hover:text-zinc-900 dark:group-hover:text-zinc-100 transition-colors" />
-                        <span class="text-xs font-bold tabular-nums text-zinc-600 dark:text-zinc-400">
-                            {{ users.length }}<span class="text-zinc-400/50 mx-0.5">/</span>{{ maxUsers }}
+                        class="h-9 px-3 gap-1.5 hover:bg-muted/80 rounded transition-all active:scale-95 group">
+                        <Users class="h-4 w-4 text-muted-foreground group-hover:text-foreground transition-colors" />
+                        <span class="text-xs font-bold tabular-nums text-foreground/80">
+                            {{ users.length }}<span class="text-muted-foreground/30 mx-0.5">/</span>{{ maxUsers }}
                         </span>
                     </Button>
                 </PopoverTrigger>
 
                 <PopoverContent align="center" :side-offset="8"
-                    class="w-72 md:w-md p-0 shadow-2xl border-zinc-200/80 dark:border-zinc-800/80 bg-white dark:bg-zinc-950 backdrop-blur-xl overflow-hidden rounded-2xl flex flex-col">
-                    <div class="p-4 pb-2 shrink-0">
-                        <h4 class="text-[11px] font-bold text-zinc-400 uppercase tracking-wider px-1">
+                    class="w-72 md:w-md p-0 shadow-2xl border border-border bg-background overflow-hidden rounded-2xl flex flex-col z-50">
+                    <div class="p-4 pb-2 shrink-0 bg-background">
+                        <h4 class="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] px-1">
                             Online Users ({{ users.length }})
                         </h4>
                     </div>
 
-                    <ScrollArea class="max-h-75 md:max-h-112 flex-1 overflow-y-auto">
+                    <ScrollArea class="max-h-75 md:max-h-112 flex-1 overflow-y-auto bg-background">
                         <div class="grid grid-cols-4 md:grid-cols-6 gap-y-6 gap-x-2.5 px-4 pt-2 pb-6">
                             <div v-for="user in users" :key="user.id" :title="user.nickname"
                                 class="flex flex-col items-center gap-2 group cursor-default">
                                 <Avatar
-                                    class="h-10 w-10 md:h-12 md:w-12 rounded-full ring-offset-2 ring-transparent group-hover:ring-zinc-200 transition-all duration-200">
+                                    class="h-10 w-10 md:h-12 md:w-12 rounded-full ring-offset-background ring-2 ring-transparent group-hover:ring-border transition-all duration-200">
                                     <AvatarImage :src="user.avatar" />
-                                    <AvatarFallback>{{ user.nickname?.slice(0, 2).toUpperCase() || '??' }}
+                                    <AvatarFallback class="bg-muted text-muted-foreground text-xs">{{
+                                        user.nickname?.slice(0, 2).toUpperCase() || '??' }}
                                     </AvatarFallback>
                                 </Avatar>
-                                <span class="text-[10px] font-medium text-zinc-500 text-center truncate w-full px-1">
+                                <span
+                                    class="text-[10px] font-medium text-muted-foreground text-center truncate w-full px-1">
                                     {{ user.nickname }}
                                 </span>
                             </div>
@@ -76,56 +74,58 @@
             <DropdownMenu>
                 <DropdownMenuTrigger as-child>
                     <Button variant="ghost" size="sm"
-                        class="h-9 px-3 gap-1.5 rounded text-zinc-600 hover:text-zinc-900 transition-colors">
+                        class="h-9 px-3 gap-1.5 rounded text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-colors">
                         <Share2 class="h-4 w-4" />
-                        <span class="hidden sm:inline font-medium text-xs">Share</span>
+                        <span class="hidden sm:inline font-bold text-xs uppercase tracking-wider">Share</span>
                     </Button>
                 </DropdownMenuTrigger>
 
                 <DropdownMenuContent align="end" :side-offset="8"
-                    class="w-56 p-1.5 shadow-xl border-zinc-200/80 dark:border-zinc-800/80 bg-white dark:bg-zinc-950 backdrop-blur-xl rounded-lg">
+                    class="w-56 p-1.5 shadow-2xl border border-border bg-background rounded-xl z-50">
                     <DropdownMenuLabel
-                        class="text-[10px] font-bold text-zinc-400 uppercase tracking-widest px-2.5 py-2">
+                        class="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] px-2.5 py-2">
                         Share Options
                     </DropdownMenuLabel>
 
                     <DropdownMenuItem @click="copyToClipboard(fullUrl, 'Full link copied')"
-                        class="gap-2.5 px-2.5 py-3 cursor-pointer rounded-md transition-colors focus:bg-zinc-100 dark:focus:bg-zinc-900">
-                        <Link2 class="h-4 w-4 text-zinc-400" />
+                        class="gap-2.5 px-2.5 py-3 cursor-pointer rounded-lg transition-colors focus:bg-muted focus:text-foreground">
+                        <Link2 class="h-4 w-4 text-muted-foreground" />
                         <span class="text-sm font-medium">Copy Full Link</span>
                     </DropdownMenuItem>
 
                     <DropdownMenuItem @click="showQrModal = true"
-                        class="gap-2.5 px-2.5 py-3 cursor-pointer rounded-md transition-colors focus:bg-zinc-100 dark:focus:bg-zinc-900">
-                        <QrCode class="h-4 w-4 text-zinc-400" />
+                        class="gap-2.5 px-2.5 py-3 cursor-pointer rounded-lg transition-colors focus:bg-muted focus:text-foreground">
+                        <QrCode class="h-4 w-4 text-muted-foreground" />
                         <span class="text-sm font-medium">Generate QR Code</span>
                     </DropdownMenuItem>
                 </DropdownMenuContent>
             </DropdownMenu>
 
-            <div class="w-px h-4 bg-zinc-200 dark:bg-zinc-800 mx-1"></div>
+            <div class="w-px h-4 bg-border/50 mx-1"></div>
 
             <AlertDialog>
                 <AlertDialogTrigger as-child>
-                    <Button variant="ghost" size="sm"
-                        class="h-9 px-3 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 rounded transition-all active:scale-95 gap-1.5 group">
+                    <Button variant="ghost" size="sm" class="h-9 px-3 text-destructive rounded transition-all active:scale-95 gap-1.5 group
+                   hover:bg-destructive hover:text-white dark:hover:bg-red-600 dark:hover:text-white">
                         <LogOut class="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
-                        <span class="hidden sm:inline font-bold text-xs">Leave</span>
+                        <span class="hidden sm:inline font-bold text-xs uppercase tracking-widest">Leave</span>
                     </Button>
                 </AlertDialogTrigger>
 
-                <AlertDialogContent class="max-w-80 rounded-2xl">
+                <AlertDialogContent class="max-w-80 rounded-2xl border-border bg-background shadow-2xl">
                     <AlertDialogHeader>
-                        <AlertDialogTitle>Leave chat?</AlertDialogTitle>
-                        <AlertDialogDescription>
+                        <AlertDialogTitle class="text-foreground">Leave chat?</AlertDialogTitle>
+                        <AlertDialogDescription class="text-muted-foreground/90">
                             You'll be disconnected, but you can rejoin later using the chat code.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter class="gap-2 sm:gap-4">
-                        <AlertDialogCancel class="rounded-full font-medium hover:cursor-pointer">Cancel
+                        <AlertDialogCancel
+                            class="rounded-xl font-medium border-border hover:bg-muted bg-transparent text-foreground">
+                            Cancel
                         </AlertDialogCancel>
-                        <AlertDialogAction @click="$emit('leave')"
-                            class="bg-red-500 hover:bg-red-600 text-white rounded-full font-bold shadow-lg shadow-red-200 dark:shadow-none hover:cursor-pointer">
+                        <AlertDialogAction @click="$emit('leave')" class="bg-destructive text-white rounded-xl font-bold border-none shadow-md transition-all duration-200
+                            hover:bg-red-500 hover:shadow-lg hover:shadow-red-500/20 active:scale-95">
                             Leave Chat
                         </AlertDialogAction>
                     </AlertDialogFooter>
@@ -134,29 +134,28 @@
         </div>
 
         <Dialog v-model:open="showQrModal">
-            <DialogContent class="sm:max-w-90 p-0 overflow-hidden border-none bg-white dark:bg-zinc-950 shadow-2xl">
+            <DialogContent class="sm:max-w-90 p-0 overflow-hidden border-border bg-background shadow-2xl">
                 <DialogHeader class="p-6 pb-0">
-                    <DialogTitle class="text-center flex flex-col items-center gap-2">
-                        <div class="p-2 bg-zinc-100 dark:bg-zinc-900 rounded-full">
+                    <DialogTitle class="text-center flex flex-col items-center gap-2 text-foreground">
+                        <div class="p-2 bg-muted rounded-full text-foreground">
                             <QrCode class="w-5 h-5" />
                         </div>
                         <span>Scan to Join Chat</span>
                     </DialogTitle>
-                    <DialogDescription class="text-center text-xs text-zinc-500">
-                        Scan this code to join the chat with code <span
-                            class="font-mono font-bold text-zinc-900 dark:text-zinc-100">{{ props.code }}</span>
+                    <DialogDescription class="text-center text-xs text-muted-foreground">
+                        Scan this code to join the chat with code <span class="font-mono font-bold text-foreground">{{
+                            props.code }}</span>
                     </DialogDescription>
                 </DialogHeader>
 
                 <div class="flex flex-col items-center justify-center p-8 gap-8">
-                    <div id="qr-container"
-                        class="p-4 bg-white rounded-2xl shadow-[0_0_40px_rgba(0,0,0,0.05)] border border-zinc-100">
+                    <div id="qr-container" class="p-4 bg-white rounded-2xl border border-border/10">
                         <QrcodeCanvas :value="fullUrl" :size="200" level="H" background="#ffffff"
                             foreground="#18181b" />
                     </div>
 
                     <Button @click="downloadQr"
-                        class="w-full gap-2 rounded-full h-12 font-bold shadow-lg shadow-zinc-200 dark:shadow-none hover:cursor-pointer">
+                        class="w-full gap-2 rounded-xl h-12 bg-primary text-primary-foreground font-bold hover:opacity-90 transition-all shadow-md">
                         <Download class="h-4 w-4" />
                         Save QR Code
                     </Button>
@@ -215,7 +214,6 @@ import {
 
 import type { ConnectionStatus } from '@/types/chat';
 import type { UserBase } from '@/types/user';
-
 
 const props = defineProps<{
     code: string | null;

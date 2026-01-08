@@ -1,9 +1,10 @@
 <template>
     <main ref="messageContainerRef"
-        class="flex-1 min-h-0 relative bg-zinc-50/50 dark:bg-zinc-950/50 overflow-y-auto custom-scrollbar"
+        class="flex-1 min-h-0 relative bg-zinc-50 dark:bg-zinc-950 overflow-y-auto custom-scrollbar"
         @scroll="handleScroll">
-        <div ref="messagesWrapperRef" class="max-w-4xl mx-auto py-4 px-4 md:px-6">
-            <div class="space-y-6">
+
+        <div ref="messagesWrapperRef" class="max-w-5xl mx-auto py-4 px-4 md:px-6">
+            <div class="space-y-8">
                 <div v-for="(msg, index) in messages" :key="msg.id || msg.tempId"
                     :ref="(el) => { if (index === messages.length - 1) lastMessageRef = (el as any); }">
                     <template v-if="msg.messageType === 'user'">
@@ -30,12 +31,10 @@ import UserMessageRow from './UserMessageRow.vue';
 import SystemMessageRow from './SystemMessageRow.vue';
 import ImagePreviewer from '../ImagePreviewer.vue';
 
-
 const props = defineProps<{
     messages: ClientMessage[];
     onResend: (message: UserMessage) => void;
 }>();
-
 
 const messageContainerRef = ref<HTMLElement | null>(null);
 const lastMessageRef = ref<HTMLElement | null>(null);
@@ -94,7 +93,6 @@ watch(() => props.messages.length, (newLength, oldLength) => {
     }
 }, { immediate: true });
 
-
 onMounted(() => {
     if (messageContainerRef.value) {
         messageContainerRef.value.scrollTop = messageContainerRef.value.scrollHeight;
@@ -114,24 +112,28 @@ onUnmounted(() => {
 
 <style scoped>
 .custom-scrollbar::-webkit-scrollbar {
-    width: 4px;
+    width: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb {
-    background-color: rgba(0, 0, 0, 0.1);
-    border-radius: 10px;
+    background-color: rgba(0, 0, 0, 0.15);
+    border-radius: 20px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-    background-color: rgba(0, 0, 0, 0.2);
+    background-color: rgba(0, 0, 0, 0.3);
 }
 
 .dark .custom-scrollbar::-webkit-scrollbar-thumb {
-    background-color: rgba(255, 255, 255, 0.15);
+    background-color: rgba(255, 255, 255, 0.2);
 }
 
 .dark .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-    background-color: rgba(255, 255, 255, 0.25);
+    background-color: rgba(255, 255, 255, 0.4);
 }
 
 .scroll-smooth {

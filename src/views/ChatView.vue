@@ -1,29 +1,31 @@
 <template>
-  <div class="h-dvh w-full overflow-hidden bg-zinc-50 dark:bg-zinc-950 flex flex-col items-center justify-center">
+  <div class="h-dvh w-full overflow-hidden bg-background flex flex-col items-center justify-center">
+
     <template v-if="connectStatus === 'FATAL_ERROR'">
       <div class="max-w-sm w-full p-6 text-center animate-in fade-in zoom-in duration-300">
         <div class="flex justify-center mb-6">
-          <div class="p-4 rounded-full bg-red-50 dark:bg-red-900/20 text-red-500">
+          <div class="p-4 rounded-full bg-destructive/10 text-destructive">
             <AlertCircle class="w-10 h-10" />
           </div>
         </div>
 
         <div class="space-y-2 mb-8">
-          <h1 class="text-2xl font-bold text-zinc-900 dark:text-zinc-100 tracking-tight">
+          <h1 class="text-2xl font-bold text-foreground tracking-tight">
             Unable to Connect
           </h1>
-          <p class="text-zinc-500 dark:text-zinc-400 text-sm leading-relaxed">
+          <p class="text-muted-foreground text-sm leading-relaxed">
             The room might be full, or the chat server is not responding.
           </p>
         </div>
 
         <div class="flex flex-col gap-3 w-full max-w-70 mx-auto">
           <Button @click="handleRetry" variant="outline"
-            class="w-full border-zinc-200 dark:border-zinc-800 hover:cursor-pointer">
+            class="w-full border-border hover:bg-muted transition-all cursor-pointer">
             Retry
           </Button>
 
-          <Button @click="handleLeaveChat" variant="default" class="w-full hover:cursor-pointer">
+          <Button @click="handleLeaveChat" variant="default"
+            class="w-full bg-primary text-primary-foreground hover:opacity-90 transition-all cursor-pointer font-bold">
             Leave Chat
           </Button>
         </div>
@@ -33,28 +35,27 @@
     <template v-else-if="(connectStatus === 'INIT' || connectStatus === 'CONNECTING') && !hasConnectedEver">
       <div class="flex flex-col items-center justify-center space-y-6 animate-in fade-in duration-700">
         <div class="relative">
-          <Zap class="w-12 h-12 text-zinc-900 dark:text-zinc-100 fill-current animate-scale-pulse" />
-          <div class="absolute inset-0 blur-2xl bg-zinc-400/20 dark:bg-zinc-100/10 rounded-full animate-scale-pulse">
+          <Zap class="w-12 h-12 text-foreground fill-current animate-scale-pulse" />
+          <div class="absolute inset-0 blur-2xl bg-primary/20 rounded-full animate-scale-pulse">
           </div>
         </div>
 
         <div class="relative flex items-center justify-center">
-          <p class="text-[11px] font-bold text-zinc-400 dark:text-zinc-500 tracking-[0.2em] uppercase">
+          <p class="text-[11px] font-black text-muted-foreground/50 tracking-[0.3em] uppercase">
             {{ connectStatus === 'INIT' ? 'Initializing' : 'Connecting' }}
           </p>
 
-          <span class="dot-loader absolute left-full ml-1"></span>
+          <span class="dot-loader absolute left-full ml-1 text-muted-foreground/50"></span>
         </div>
       </div>
     </template>
 
-    <div v-else
-      class="flex-1 w-full max-w-3xl mx-auto flex flex-col min-h-0 relative border-x border-zinc-200/50 dark:border-zinc-800/50">
+    <div v-else class="flex-1 w-full max-w-3xl mx-auto flex flex-col min-h-0 relative border-x border-border/40">
 
       <Header :code="chatCode" :connectStatus="connectStatus" :users="onlineUsers" :max-users="maxUsers"
         @leave="handleLeaveChat" />
 
-      <Messages :messages="messages" :on-resend="handleResendMessage" />
+      <Messages class="bg-transparent" :messages="messages" :on-resend="handleResendMessage" />
 
       <InputPanel :connectStatus="connectStatus" :files="filesToUpload" :maxFiles="MAX_FILE_COUNT"
         @send="handleSendMessage" @upload-start="handleUploadStart" @file-removed="handleFileRemoved" />
