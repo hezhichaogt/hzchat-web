@@ -1,5 +1,8 @@
 <template>
-  <header class="w-full px-4 py-2 flex justify-center animate-in fade-in slide-in-from-top-2 duration-800">
+  <header :class="cn(
+    'w-full p-4 flex justify-center bg-background/80 backdrop-blur-md',
+    'animate-in fade-in slide-in-from-top-4'
+  )">
 
     <div :class="cn(
       'flex h-14 items-center justify-between',

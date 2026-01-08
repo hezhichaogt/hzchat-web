@@ -8,7 +8,7 @@
       </template>
     </Header>
 
-    <main class="flex-1 flex flex-col items-center p-4 md:p-8">
+    <main class="flex-1 flex flex-col items-center p-4 md:p-8 animate-in fade-in zoom-in-95">
       <router-view />
     </main>
 

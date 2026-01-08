@@ -1,7 +1,8 @@
 <template>
-  <div class="min-h-dvh">
+  <div
+    class="min-h-dvh flex flex-col bg-background text-foreground antialiased selection:bg-primary/20 transition-colors duration-500">
     <router-view />
-    <Toaster position="top-center" richColors />
+    <Toaster position="top-center" richColors :theme="themeStore.theme === 'dark' ? 'dark' : 'light'" />
   </div>
 </template>
 

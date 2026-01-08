@@ -4,8 +4,7 @@
         <main class="flex-1 w-full max-w-sm flex flex-col items-center justify-center gap-6 px-4">
 
             <div class="animate-in fade-in slide-in-from-bottom-4 duration-1000 group cursor-default">
-                <Logo size="lg" :show-text="true"
-                    class="transform transition-transform duration-500 group-hover:scale-105" />
+                <Logo size="lg" :show-text="true" />
             </div>
 
             <div class="w-full relative min-h-110">
