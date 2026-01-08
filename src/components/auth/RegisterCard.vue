@@ -1,10 +1,10 @@
 <template>
-    <Card class="border-zinc-200/60 shadow-2xl shadow-zinc-200/30 rounded-2xl">
+    <Card class="border-border bg-card/90 backdrop-blur-xl shadow-none rounded-2xl">
         <CardHeader class="space-y-1">
-            <CardTitle class="text-2xl font-bold tracking-tight text-zinc-900">
+            <CardTitle class="text-2xl font-bold tracking-tight">
                 Create an account
             </CardTitle>
-            <CardDescription class="text-zinc-500 text-xs">
+            <CardDescription class="text-muted-foreground text-xs">
                 Create an account to unlock more features
             </CardDescription>
         </CardHeader>
@@ -13,43 +13,43 @@
             <CardContent class="flex flex-col gap-4">
                 <FormField v-slot="{ componentField }" name="username" :form="registerForm">
                     <FormItem>
-                        <FormLabel class="text-xs font-bold uppercase tracking-widest text-zinc-500/90">
+                        <FormLabel class="text-xs font-bold uppercase tracking-widest text-muted-foreground/80">
                             Username
                         </FormLabel>
                         <FormControl>
                             <Input type="text" placeholder="Choose a unique username" v-bind="componentField"
                                 autocomplete="username"
-                                class="h-10 border-zinc-200 bg-white/50 focus-visible:ring-1 focus-visible:ring-zinc-400 focus-visible:ring-offset-2 outline-none transition-all placeholder:text-zinc-300" />
+                                class="h-10 border-border bg-background/40 focus-visible:ring-1 focus-visible:ring-primary/50 outline-none transition-all placeholder:text-muted-foreground/30" />
                         </FormControl>
-                        <FormMessage class="text-[10px] font-medium" />
+                        <FormMessage class="text-[10px] font-medium text-destructive" />
                     </FormItem>
                 </FormField>
 
                 <FormField v-slot="{ componentField }" name="password" :form="registerForm">
                     <FormItem>
-                        <FormLabel class="text-xs font-bold uppercase tracking-widest text-zinc-500/90">
+                        <FormLabel class="text-xs font-bold uppercase tracking-widest text-muted-foreground/80">
                             Password
                         </FormLabel>
                         <FormControl>
                             <div class="relative flex items-center">
                                 <Input :type="isPasswordVisible ? 'text' : 'password'" placeholder="••••••••"
                                     v-bind="componentField" autocomplete="new-password"
-                                    class="h-10 w-full pr-10 border-zinc-200 bg-white/50 focus-visible:ring-1 focus-visible:ring-zinc-400 focus-visible:ring-offset-2 outline-none transition-all placeholder:text-zinc-300 placeholder:opacity-100" />
+                                    class="h-10 w-full pr-10 border-border bg-background/40 focus-visible:ring-1 focus-visible:ring-primary/50 outline-none transition-all placeholder:text-muted-foreground/30 placeholder:opacity-100" />
                                 <button type="button" @click="isPasswordVisible = !isPasswordVisible"
-                                    class="absolute right-3 text-zinc-400 hover:text-zinc-900 transition-colors focus:outline-none">
+                                    class="absolute right-3 text-muted-foreground/40 hover:text-foreground transition-colors focus:outline-none cursor-pointer">
                                     <Eye v-if="!isPasswordVisible" class="h-4 w-4" />
                                     <EyeOff v-else class="h-4 w-4" />
                                 </button>
                             </div>
                         </FormControl>
-                        <FormMessage class="text-[10px] font-medium" />
+                        <FormMessage class="text-[10px] font-medium text-destructive" />
                     </FormItem>
                 </FormField>
             </CardContent>
 
             <CardFooter class="pt-6">
                 <Button type="submit"
-                    class="w-full h-10 bg-zinc-950 hover:bg-zinc-800 text-white rounded-xl shadow-lg shadow-zinc-950/20 transition-all active:scale-[0.98] hover:cursor-pointer"
+                    class="w-full h-10 bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl transition-all active:scale-[0.98] cursor-pointer"
                     :disabled="isLoading">
                     <Loader2 v-if="isLoading" class="mr-2 h-4 w-4 animate-spin" />
                     <UserPlus v-else class="mr-2 h-4 w-4" />
@@ -83,7 +83,6 @@ import {
 
 import { useUserStore } from '@/stores/user';
 import { register } from '@/services/auth';
-
 
 const registerSchema = toTypedSchema(
     z.object({

@@ -1,5 +1,5 @@
 <template>
-    <div class="fixed inset-0 w-full h-dvh overflow-hidden flex flex-col items-center bg-zinc-50/50">
+    <div class="fixed inset-0 w-full h-dvh overflow-hidden flex flex-col items-center bg-background">
 
         <main class="flex-1 w-full max-w-sm flex flex-col items-center justify-center gap-6 px-4">
 
@@ -12,11 +12,16 @@
                     leave-active-class="animate-out fade-out zoom-out-95 duration-150 ease-in" mode="out-in">
                     <div v-if="view === 'auth'" key="auth" class="w-full">
                         <Tabs default-value="login" class="w-full">
-                            <TabsList class="grid w-full grid-cols-2 my-2 bg-zinc-100/80 p-1">
-                                <TabsTrigger value="login" class="text-xs uppercase tracking-widest cursor-pointer">
-                                    Login</TabsTrigger>
-                                <TabsTrigger value="register" class="text-xs uppercase tracking-widest cursor-pointer">
-                                    Register</TabsTrigger>
+                            <TabsList
+                                class="grid w-full grid-cols-2 my-2 bg-muted/50 p-1 border border-border/40 rounded-xl">
+                                <TabsTrigger value="login"
+                                    class="text-[10px] font-black uppercase tracking-[0.2em] cursor-pointer data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm transition-all">
+                                    Login
+                                </TabsTrigger>
+                                <TabsTrigger value="register"
+                                    class="text-[10px] font-black uppercase tracking-[0.2em] cursor-pointer data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm transition-all">
+                                    Register
+                                </TabsTrigger>
                             </TabsList>
 
                             <TabsContent value="login">
