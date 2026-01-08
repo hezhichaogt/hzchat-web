@@ -2,9 +2,7 @@
 // Guest identity management utility module.
 //
 
-const GUEST_ID_KEY = 'HZCHAT_GUEST_ID'
-const GUEST_NICKNAME_KEY = 'HZCHAT_GUEST_NICKNAME'
-
+const GUEST_ID_KEY = 'hzchat-guest-id'
 const GUEST_ID_PREFIX = 'guest_'
 const GUEST_ID_RAW_LENGTH = 6
 const BASE62_CHARS = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'
@@ -51,24 +49,15 @@ export function getOrCreateGuestID(): string {
   return guestId
 }
 
-export function loadNickname(): string | null {
-  try {
-    const nickname = localStorage.getItem(GUEST_NICKNAME_KEY)
-    return nickname?.trim() || null
-  } catch (e) {
-    return null
-  }
-}
+export function resetGuestID(): string {
+  const rawID = generateSecureBase62(GUEST_ID_RAW_LENGTH)
+  const newGuestId = GUEST_ID_PREFIX + rawID
 
-export function saveNickname(nickname: string): void {
-  const trimmed = nickname.trim()
   try {
-    if (trimmed) {
-      localStorage.setItem(GUEST_NICKNAME_KEY, trimmed)
-    } else {
-      localStorage.removeItem(GUEST_NICKNAME_KEY)
-    }
+    localStorage.setItem(GUEST_ID_KEY, newGuestId)
   } catch (e) {
-    console.warn('Failed to save nickname to localStorage:', e)
+    console.warn('Failed to reset guestID in localStorage:', e)
   }
+
+  return newGuestId
 }

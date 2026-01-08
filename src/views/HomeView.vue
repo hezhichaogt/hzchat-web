@@ -1,43 +1,52 @@
 <template>
-  <div class="w-full max-w-2xl px-1 py-4 flex flex-col gap-8 mx-auto animate-in fade-in zoom-in-95 duration-800">
+  <div class="w-full max-w-2xl px-1 py-10 flex flex-col gap-12 mx-auto animate-in fade-in zoom-in-95">
 
-    <div class="flex flex-col gap-1.5 md:gap-2">
-      <h1 class="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tighter leading-[1.05] text-foreground">
+    <div class="flex flex-col gap-6 px-2">
+      <h1 class="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tighter leading-[1.1] text-foreground">
         Zero-Record <br />
         <span class="inline-block text-primary">Messaging.</span>
-        <span class="text-muted-foreground/50 block mt-1 sm:mt-2 font-medium">Traceless. Start Now.</span>
+        <span class="text-foreground/30 block mt-4 font-medium tracking-[0.2em] uppercase text-base sm:text-lg">
+          Traceless. Start Now.
+        </span>
       </h1>
 
-      <p class="text-base sm:text-lg md:text-xl text-muted-foreground/70 leading-relaxed font-medium px-2">
-        No registration. <span class="text-foreground border-b-[1.5px] border-foreground/20 italic">Zero storage</span>.
+      <p class="text-base sm:text-lg md:text-xl text-foreground/50 leading-relaxed font-medium">
+        No registration.
+        <span class="text-foreground/90">Zero storage</span>.
+        <br class="hidden sm:block" />
         Open-source verification for <span class="text-foreground/90">uncompromising</span> privacy.
       </p>
     </div>
 
     <section v-if="!userStore.isLoggedIn" class="px-2">
-      <div class="py-2 space-y-2 group">
-        <div class="flex items-baseline gap-2">
-          <span class="flex h-1.5 w-1.5 rounded-full bg-emerald-500/60 animate-pulse"></span>
-          <Label for="guest-nickname" class="text-[12px] font-black tracking-[0.2em] uppercase opacity-50">
-            Identity
-          </Label>
-          <span class="text-[12px] text-muted-foreground/30 italic font-medium">
-            Stored locally.
+      <div
+        class="flex items-center justify-between h-12 px-4 rounded-xl border border-foreground/3 bg-foreground/1 dark:bg-white/3 group">
+        <div class="flex items-center gap-2">
+          <Fingerprint class="size-3.5 text-foreground/40" />
+          <span class="text-[10px] font-black tracking-widest uppercase text-foreground/40">ID</span>
+          <div class="w-px h-3 bg-foreground/20 mr-2"></div>
+          <span class="text-sm font-mono font-medium tracking-tight text-foreground/70">
+            {{ userStore.profile.id }}
           </span>
         </div>
 
-        <div class="group/item">
-          <Input id="guest-nickname" v-model="nicknameInput" :placeholder="userStore.getDisplayName" maxlength="16"
-            class="h-10 px-0 bg-transparent border-0 border-b border-muted-foreground/20 group-hover/item:border-muted-foreground/40 rounded-none focus-visible:ring-0 focus-visible:border-foreground transition-all text-base font-medium"
-            @blur="handleNicknameChange" />
-        </div>
+        <button @click="handleResetIdentity"
+          class="flex items-center gap-1.5 px-2 py-1.5 rounded-lg transition-all duration-300 active:scale-95 group/btn"
+          title="Generate New ID">
+          <Dice5
+            class="size-3.5 text-foreground/50 group-hover/btn:text-primary/80 group-hover/btn:rotate-15 transition-all duration-300" />
+          <span
+            class="text-[10px] font-black uppercase tracking-[0.15em] text-foreground/50 group-hover/btn:text-foreground/90 transition-colors">
+            New ID
+          </span>
+        </button>
       </div>
     </section>
 
     <div class="flex flex-col gap-6">
       <div class="flex flex-col sm:flex-row gap-4 px-2">
         <Button size="lg"
-          class="w-full sm:flex-1 h-14 text-base font-extrabold transition-all active:scale-[0.97] shadow-md hover:cursor-pointer"
+          class="w-full sm:flex-1 h-14 text-base font-extrabold transition-all active:scale-[0.97] shadow-md hover:shadow-primary/20 dark:shadow-primary/5 hover:cursor-pointer"
           @click="createPrivateChat" :disabled="isBusy">
           <div class="flex items-center justify-center w-full gap-2">
             <Loader2 v-if="isBusy" class="mr-3 h-5 w-5 animate-spin" />
@@ -47,7 +56,7 @@
         </Button>
 
         <Button variant="outline" size="lg"
-          class="w-full sm:flex-1 h-14 text-base font-bold border-2 transition-all active:scale-[0.97] hover:cursor-pointer"
+          class="w-full sm:flex-1 h-14 text-base font-bold border-2 transition-all active:scale-[0.97] dark:border-white/10 dark:hover:bg-white/5 hover:cursor-pointer"
           @click="createGroupChat" :disabled="isBusy">
           <div class="flex items-center justify-center w-full gap-2">
             <Loader2 v-if="isBusy" class="mr-3 h-5 w-5 animate-spin" />
@@ -58,29 +67,28 @@
       </div>
 
       <div class="relative py-4 flex items-center justify-center">
-        <div class="absolute inset-x-0 h-px bg-linear-to-r from-transparent via-muted-foreground/30 to-transparent">
+        <div class="absolute inset-x-0 h-px bg-linear-to-r from-transparent via-foreground/10 to-transparent">
         </div>
-
-        <span
-          class="relative bg-background px-6 text-[10px] uppercase font-black tracking-[0.4em] text-muted-foreground/40">
+        <span class="relative bg-background px-6 text-[10px] uppercase font-black tracking-[0.4em] text-foreground/30">
           OR
         </span>
       </div>
 
       <div class="px-2">
-        <InputGroup class="h-14">
+        <InputGroup
+          class="h-14 border border-foreground/10 dark:border-white/10 dark:bg-white/3 rounded-xl overflow-hidden transition-all duration-300 focus-within:border-primary/40 focus-within:ring-4 focus-within:ring-primary/5 shadow-sm">
           <InputGroupInput v-model="chatCodeInput" placeholder="ENTER CHAT CODE" maxlength="6"
-            class="px-6 md:px-4 font-mono uppercase tracking-[0.3em] focus-visible:ring-0 placeholder:font-sans placeholder:tracking-normal placeholder:text-sm placeholder:opacity-40 text-xl!"
+            class="px-6 md:px-4 font-mono tracking-[0.3em] focus-visible:ring-0 border-0 placeholder:font-sans placeholder:tracking-normal placeholder:text-xs placeholder:font-bold placeholder:opacity-40 text-xl!"
             :disabled="isBusy" />
 
-          <InputGroupAddon align="inline-end" class="pr-4">
+          <InputGroupAddon align="inline-end" class="pr-3">
             <InputGroupButton @click="handleJoinChat" :disabled="isBusy || chatCodeInput.length < 6" variant="secondary"
-              size="sm" class="hover:cursor-pointer">
+              size="sm" class="hover:cursor-pointer transition-fluid font-bold px-5 rounded-lg">
               <Loader2 v-if="isBusy" class="size-5 animate-spin" />
               <template v-else>
-                <div class="flex justify-center items-center">
-                  <span class="text-base">JOIN</span>
-                  <ChevronRight class="size-5" />
+                <div class="flex justify-center items-center gap-1">
+                  <span class="text-sm tracking-wide">JOIN</span>
+                  <ChevronRight class="size-4 opacity-70" />
                 </div>
               </template>
             </InputGroupButton>
@@ -93,15 +101,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue';
+import { ref } from 'vue';
 import { useRouter } from 'vue-router';
-import { storeToRefs } from 'pinia';
 import { useHead } from '@unhead/vue';
 import { toast } from 'vue-sonner';
 
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import {
   InputGroup,
   InputGroupInput,
@@ -113,7 +118,9 @@ import {
   Loader2,
   Users,
   MessageSquare,
-  ChevronRight
+  ChevronRight,
+  Fingerprint,
+  Dice5
 } from 'lucide-vue-next';
 
 import { useUserStore } from '@/stores/user';
@@ -131,37 +138,17 @@ useHead({
 
 const router = useRouter();
 const userStore = useUserStore();
-const { profile } = storeToRefs(userStore);
 
 const isBusy = ref(false);
 const chatCodeInput = ref('');
-const nicknameInput = ref(profile.value.nickname || '');
 
-watch(() => profile.value.nickname, (newVal) => {
-  nicknameInput.value = newVal || '';
-});
-
-const handleNicknameChange = () => {
-  const trimmedInput = nicknameInput.value.trim();
-  const currentNickname = profile.value.nickname;
-
-  if (trimmedInput === currentNickname) return;
-
-  const validRegex = /^[\p{L}\p{N}_?!-]{1,16}$/u;
-  if (trimmedInput && !validRegex.test(trimmedInput)) {
-    toast.error('Invalid nickname. Use 1-16 letters, numbers or underscores.');
-    nicknameInput.value = currentNickname || '';
-    return;
+const handleResetIdentity = () => {
+  try {
+    userStore.refreshIdentity()
+  } catch (error) {
+    toast.error('Could not generate a new ID')
   }
-
-  userStore.setGuestNickname(trimmedInput);
-
-  if (trimmedInput) {
-    toast.success('Identity updated.');
-  } else {
-    toast.info('Using anonymous ID.');
-  }
-};
+}
 
 const handleCreateChat = async (type: ChatType) => {
   if (isBusy.value) return;
@@ -171,7 +158,8 @@ const handleCreateChat = async (type: ChatType) => {
     const { chatCode } = await createChat(type);
     router.push(`/chat/${chatCode}`);
   } catch (error: any) {
-    toast.error(`Creation failed: ${error.message || 'Server error'}`);
+    console.error(error.message)
+    toast.error('Could not create the chat. Please try again.')
   } finally {
     isBusy.value = false;
   }
@@ -190,7 +178,7 @@ const handleJoinChat = async () => {
   }
 
   if (trimmedCode.length !== REQUIRED_LENGTH) {
-    toast.error(`Code must be exactly ${REQUIRED_LENGTH} characters.`);
+    toast.error(`Please enter a valid ${REQUIRED_LENGTH}-character chat code.`);
     return;
   }
 
@@ -206,7 +194,8 @@ const handleJoinChat = async () => {
       state: { token }
     });
   } catch (error: any) {
-    toast.error(`Join failed: ${error.message}`);
+    console.error(error.message)
+    toast.error('Failed to join chat. Please check the code and try again.');
   } finally {
     isBusy.value = false;
   }

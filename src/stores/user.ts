@@ -1,15 +1,13 @@
 import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
 import type { UserProfile } from '@/types/user'
-import { getOrCreateGuestID, loadNickname, saveNickname } from '@/utils/guest'
+import { getOrCreateGuestID, resetGuestID } from '@/utils/guest'
 
-const IDENTITY_TOKEN_KEY = 'HZCHAT_IDENTITY_TOKEN'
-const USER_PROFILE_KEY = 'HZCHAT_USER_PROFILE'
+const IDENTITY_TOKEN_KEY = 'hzchat-identity-token'
+const USER_PROFILE_KEY = 'hzchat-user-profile'
 
 export const useUserStore = defineStore('user', () => {
   const guestID = ref<string>(getOrCreateGuestID())
-  const guestNickname = ref<string | null>(loadNickname())
-
   const identityToken = ref<string | null>(localStorage.getItem(IDENTITY_TOKEN_KEY))
   const userProfile = ref<UserProfile | null>(null)
 
@@ -29,11 +27,11 @@ export const useUserStore = defineStore('user', () => {
       return userProfile.value
     }
 
-    const defaultNickname = `Guest_${guestID.value.slice(-6)}`
+    const defaultNickname = `Guest #$${guestID.value.slice(-6)}`
 
     return {
       id: guestID.value,
-      nickname: guestNickname.value || defaultNickname,
+      nickname: defaultNickname,
       avatar: '',
       userType: 'guest',
       planType: 'FREE',
@@ -41,16 +39,6 @@ export const useUserStore = defineStore('user', () => {
       email: '',
     }
   })
-
-  const getDisplayName = computed((): string => {
-    return profile.value.nickname || profile.value.id
-  })
-
-  function setGuestNickname(name: string) {
-    const trimmed = name.trim()
-    guestNickname.value = trimmed || null
-    saveNickname(trimmed)
-  }
 
   function handleLoginSuccess(token: string, userInfo: UserProfile) {
     identityToken.value = token
@@ -93,14 +81,18 @@ export const useUserStore = defineStore('user', () => {
     }
   }
 
+  function refreshIdentity() {
+    const newID = resetGuestID()
+    guestID.value = newID
+  }
+
   return {
     isLoggedIn,
     profile,
     identityToken,
-    getDisplayName,
-    setGuestNickname,
     handleLoginSuccess,
     logout,
     updateProfile,
+    refreshIdentity,
   }
 })

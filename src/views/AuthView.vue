@@ -3,13 +3,13 @@
 
         <main class="flex-1 w-full max-w-sm flex flex-col items-center justify-center gap-6 px-4">
 
-            <div class="animate-in fade-in slide-in-from-bottom-4 duration-1000 group cursor-default">
+            <div class="animate-in fade-in slide-in-from-bottom-4 group cursor-default">
                 <Logo size="lg" :show-text="true" />
             </div>
 
             <div class="w-full relative min-h-110">
-                <Transition appear enter-active-class="animate-in fade-in zoom-in-95 duration-300"
-                    leave-active-class="animate-out fade-out zoom-out-95 duration-200" mode="out-in">
+                <Transition appear enter-active-class="animate-in fade-in zoom-in-95 duration-200 ease-out"
+                    leave-active-class="animate-out fade-out zoom-out-95 duration-150 ease-in" mode="out-in">
                     <div v-if="view === 'auth'" key="auth" class="w-full">
                         <Tabs default-value="login" class="w-full">
                             <TabsList class="grid w-full grid-cols-2 my-2 bg-zinc-100/80 p-1">

@@ -30,7 +30,6 @@ export async function joinChat(code: string): Promise<JoinChatResponse> {
 
   if (profile.userType === 'guest') {
     data.guestId = profile.id
-    data.nickname = profile.nickname
   }
 
   return await post<JoinChatResponse>(url, data)
