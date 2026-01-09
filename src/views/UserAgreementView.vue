@@ -1,22 +1,20 @@
 <template>
-    <div class="min-h-screen bg-background transition-colors duration-500">
-        <div class="max-w-2xl mx-auto px-2">
-            <h1
-                class="text-3xl sm:text-4xl lg:text-5xl font-black mb-2 tracking-tighter uppercase animate-in fade-in slide-in-from-top-4 duration-800">
-                User Agreement
-            </h1>
+    <div class="w-full max-w-2xl mx-auto py-4">
+        <h1
+            class="text-4xl sm:text-5xl lg:text-6xl font-black mb-10 tracking-tighter uppercase text-zinc-900 dark:text-zinc-100">
+            Terms
+        </h1>
 
-            <div class="relative p-0.5">
-                <MarkdownRenderer :content="userAgreementMd" />
-            </div>
+        <div class="relative">
+            <MarkdownRenderer :content="userAgreementMd" />
+        </div>
 
-            <div class="my-6">
-                <Button variant="link" @click="$router.replace('/')"
-                    class="px-0 font-bold tracking-tight text-muted-foreground hover:text-primary transition-colors hover:cursor-pointer -translate-x-2.5">
-                    <ArrowLeft class="mr-1.5 h-4 w-4" />
-                    BACK TO HOME
-                </Button>
-            </div>
+        <div class="mt-16 pt-8 border-t border-zinc-200/60 dark:border-zinc-800/60">
+            <Button variant="link" @click="$router.replace('/')"
+                class="h-auto p-0 font-bold tracking-widest text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 transition-all hover:cursor-pointer group">
+                <ArrowLeft class="mr-2 h-4 w-4 transition-transform group-hover:-translate-x-1" />
+                BACK TO HOME
+            </Button>
         </div>
     </div>
 </template>

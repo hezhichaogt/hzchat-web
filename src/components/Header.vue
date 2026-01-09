@@ -11,7 +11,7 @@
     )">
       <Logo />
 
-      <div class="flex items-center justify-end gap-2">
+      <div class="flex items-center justify-end gap-2.5">
         <slot name="actions" />
       </div>
     </div>

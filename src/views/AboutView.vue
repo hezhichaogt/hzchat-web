@@ -1,99 +1,98 @@
 <template>
-    <div class="min-h-screen bg-background transition-colors duration-500 py-2">
-        <div class="max-w-2xl mx-auto px-4 sm:px-6">
-            <div class="mb-16 animate-in fade-in slide-in-from-top-4 duration-1000">
-                <h1 class="text-4xl sm:text-5xl lg:text-6xl font-black tracking-tighter uppercase leading-[0.9] mb-6">
-                    HZ Chat<span class="text-primary">:</span><br />
-                    <span class="text-primary">Instant.</span> Temporary<span class="text-primary">.</span>
-                    Zero-Log<span class="text-primary">.</span>
-                </h1>
-                <p
-                    class="text-lg sm:text-xl text-muted-foreground font-medium tracking-tight leading-relaxed max-w-2xl">
-                    Zero Burden for Conversation, Built for Privacy. HZ Chat is dedicated to providing a completely
-                    private,
-                    zero-stress communication tool, ensuring every one of your exchanges is instantaneous and leaves no
-                    permanent trace.
-                </p>
-            </div>
+    <div class="w-full max-w-2xl mx-auto px-0.5 py-4">
+        <div class="mb-20">
+            <h1
+                class="text-5xl sm:text-6xl font-black tracking-tighter uppercase leading-[0.85] mb-8 text-zinc-900 dark:text-zinc-100">
+                HZ Chat<span class="text-zinc-400 dark:text-zinc-600">:</span><br />
+                <span class="text-zinc-900 dark:text-zinc-100">Instant.</span>
+                <span class="text-zinc-400 dark:text-zinc-600">Temporary.</span><br />
+                Zero-Log<span class="text-zinc-400 dark:text-zinc-600">.</span>
+            </h1>
+            <p
+                class="text-lg sm:text-xl text-zinc-500 dark:text-zinc-400 font-medium tracking-tight leading-relaxed max-w-2xl border-l-2 border-zinc-200 dark:border-zinc-800 pl-6 ml-1">
+                Zero Burden for Conversation, Built for Privacy. HZ Chat is dedicated to providing a completely
+                private,
+                zero-stress communication tool, ensuring every one of your exchanges is instantaneous and leaves no
+                permanent trace.
+            </p>
+        </div>
 
-            <Separator class="my-10 opacity-50" />
+        <section class="mb-20">
+            <h2 class="text-[10px] font-bold tracking-[0.3em] uppercase text-zinc-400 dark:text-zinc-500 mb-8 ml-1">
+                Privacy Focused
+            </h2>
 
-            <section class="mb-14 animate-in fade-in slide-in-from-bottom-6 duration-1000 delay-200 fill-mode-both">
-                <h2 class="text-sm font-bold tracking-[0.2em] uppercase text-primary whitespace-nowrap mb-4">
-                    Privacy Focused
-                </h2>
-
-                <div class="grid gap-px bg-border/40 border border-border/40 rounded-xl overflow-hidden shadow-sm">
-                    <div v-for="(item, index) in privacyFeatures" :key="index"
-                        class="bg-background p-6 sm:p-8 hover:bg-muted/30 transition-colors group">
-                        <div class="flex items-start gap-4">
-                            <component :is="item.icon" class="mt-1 size-5 text-primary shrink-0" />
-                            <div class="space-y-2 hover:cursor-default">
-                                <h3 class="font-bold tracking-tight text-lg">{{ item.title }}</h3>
-                                <p class="text-muted-foreground leading-relaxed text-sm sm:text-base">
-                                    {{ item.description }}
-                                </p>
-                            </div>
+            <div
+                class="grid gap-px bg-zinc-200 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-800 rounded-3xl overflow-hidden shadow-2xl shadow-zinc-200/50 dark:shadow-none">
+                <div v-for="(item, index) in privacyFeatures" :key="index"
+                    class="bg-white dark:bg-zinc-950 p-8 sm:p-10 hover:bg-zinc-50 dark:hover:bg-zinc-900/50 transition-all group">
+                    <div class="flex flex-col sm:flex-row items-start gap-6">
+                        <div
+                            class="p-3 rounded-xl bg-zinc-100 dark:bg-zinc-900 group-hover:scale-110 transition-transform">
+                            <component :is="item.icon" class="size-6 text-zinc-900 dark:text-zinc-100 shrink-0" />
+                        </div>
+                        <div class="space-y-2">
+                            <h3 class="font-bold tracking-tight text-xl text-zinc-900 dark:text-zinc-100">{{ item.title
+                            }}</h3>
+                            <p class="text-zinc-500 dark:text-zinc-400 leading-relaxed text-sm sm:text-base">
+                                {{ item.description }}
+                            </p>
                         </div>
                     </div>
                 </div>
-            </section>
+            </div>
+        </section>
 
-            <section
-                class="mb-14 animate-in fade-in slide-in-from-bottom-6 duration-1000 delay-200 fill-mode-both flex flex-col gap-6">
-                <h2 class="text-sm font-bold tracking-[0.2em] uppercase text-primary whitespace-nowrap">
-                    Pure Communication
-                </h2>
+        <section class="mb-24 flex flex-col gap-10">
+            <h2 class="text-[10px] font-bold tracking-[0.3em] uppercase text-zinc-400 dark:text-zinc-500 ml-1">
+                Pure Communication
+            </h2>
 
-                <div class="grid gap-8 sm:grid-cols-2">
-                    <div v-for="(item, index) in communicationFeatures" :key="index"
-                        class="relative pl-6 border-l-2 border-primary/20 hover:border-primary transition-colors">
-                        <h3 class="font-bold tracking-tight text-lg mb-2">{{ item.title }}</h3>
-                        <p class="text-muted-foreground text-sm leading-relaxed">
-                            {{ item.description }}
-                        </p>
-                    </div>
-                </div>
-            </section>
-
-            <div
-                class="pt-10 border-t border-border/20 animate-in fade-in slide-in-from-bottom-6 duration-1000 delay-500 fill-mode-both">
-                <h2 class="text-2xl font-bold tracking-tighter mb-4 text-primary">Connect With Us</h2>
-                <p class="text-muted-foreground mb-6 font-medium pr-8">
-                    If you have any questions regarding our service, privacy policy, or open-source code, please contact
-                    us via:
-                </p>
-
-                <Button as-child class="font-bold tracking-tight shadow-lg shadow-primary/20">
-                    <a href="mailto:privacy@hzclog.com">
-                        <Mail class="mr-2 size-4" />
-                        Email privacy@hzclog.com
-                    </a>
-                </Button>
-
-                <div class="mt-8 space-y-4">
-                    <p class="text-sm font-bold text-muted-foreground/60 uppercase tracking-widest">Policy & Terms
+            <div class="grid gap-12 sm:grid-cols-2 px-1">
+                <div v-for="(item, index) in communicationFeatures" :key="index"
+                    class="relative pl-8 border-l border-zinc-200 dark:border-zinc-800 hover:border-zinc-900 dark:hover:border-zinc-100 transition-colors">
+                    <h3 class="font-bold tracking-tight text-lg mb-3 text-zinc-900 dark:text-zinc-100">{{ item.title }}
+                    </h3>
+                    <p class="text-zinc-500 dark:text-zinc-400 text-sm leading-relaxed">
+                        {{ item.description }}
                     </p>
-                    <nav class="flex flex-col gap-2">
-                        <RouterLink to="/privacy"
-                            class="text-primary hover:underline font-bold tracking-tight flex items-center gap-2">
-                            <ArrowRight class="size-3" /> Privacy Policy
-                        </RouterLink>
-                        <RouterLink to="/agreement"
-                            class="text-primary hover:underline font-bold tracking-tight flex items-center gap-2">
-                            <ArrowRight class="size-3" /> User Agreement
-                        </RouterLink>
-                    </nav>
                 </div>
             </div>
-        </div>
+        </section>
 
+        <div class="pt-16 border-t border-zinc-200 dark:border-zinc-800">
+            <h2 class="text-3xl font-black tracking-tighter mb-6 text-zinc-900 dark:text-zinc-100">Connect With Us</h2>
+            <p class="text-zinc-500 dark:text-zinc-400 mb-10 font-medium leading-relaxed">
+                If you have any questions regarding our service, privacy policy, or open-source code, please contact
+                us via:
+            </p>
+
+            <Button as-child
+                class="h-12 px-8 rounded-2xl bg-zinc-900 dark:bg-zinc-100 text-zinc-50 dark:text-zinc-900 font-bold tracking-tight shadow-xl shadow-zinc-900/20 transition-all hover:opacity-90 active:scale-[0.98]">
+                <a href="mailto:privacy@hzclog.com">
+                    <Mail class="mr-2 size-4" />
+                    Email privacy@hzclog.com
+                </a>
+            </Button>
+
+            <div class="mt-16 space-y-6">
+                <p class="text-[10px] font-bold text-zinc-400 uppercase tracking-[0.2em]">Policy & Terms</p>
+                <nav class="flex flex-wrap gap-x-8 gap-y-4">
+                    <RouterLink
+                        v-for="link in [{ to: '/privacy', label: 'Privacy Policy' }, { to: '/agreement', label: 'Terms' }]"
+                        :key="link.to" :to="link.to"
+                        class="group text-zinc-900 dark:text-zinc-100 font-bold tracking-tight flex items-center gap-2 text-sm">
+                        <ArrowRight class="size-3 transition-transform group-hover:translate-x-1" />
+                        {{ link.label }}
+                    </RouterLink>
+                </nav>
+            </div>
+        </div>
     </div>
 </template>
 
 <script setup lang="ts">
 import { useHead } from '@unhead/vue'
-import { Separator } from '@/components/ui/separator'
 import { Button } from '@/components/ui/button'
 import {
     ShieldCheck,
