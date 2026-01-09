@@ -3,57 +3,75 @@
         <DialogTrigger as-child>
             <slot>
                 <Button variant="ghost" size="sm"
-                    class="ml-1 h-8 px-2 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-secondary transition-all hover:cursor-pointer group/btn">
+                    class="ml-1 h-8 px-3 text-xs font-semibold text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800/80 transition-all group/btn">
                     {{ triggerContent }}
                     <ChevronRight
-                        class="ml-0.5 size-3.5 opacity-50 transition-transform group-hover/btn:translate-x-0.5" />
+                        class="ml-1 size-3.5 opacity-40 transition-transform group-hover/btn:opacity-100 group-hover/btn:translate-x-0.5" />
                 </Button>
             </slot>
         </DialogTrigger>
 
-        <DialogContent class="sm:max-w-106">
+        <DialogContent
+            class="sm:max-w-106.25 rounded-3xl border-zinc-200/60 dark:border-zinc-800/60 bg-white dark:bg-zinc-950 shadow-2xl">
             <DialogHeader>
-                <DialogTitle>{{ dialogTitle }}</DialogTitle>
-                <DialogDescription>{{ dialogDescription }}</DialogDescription>
+                <DialogTitle class="text-xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100">{{ dialogTitle }}
+                </DialogTitle>
+                <DialogDescription class="text-zinc-500 dark:text-zinc-400">{{ dialogDescription }}</DialogDescription>
             </DialogHeader>
 
-            <div v-if="step === 'MANAGEMENT'" class="py-6 flex flex-col items-center justify-center gap-4">
-                <div class="flex w-full items-center gap-3 px-4 py-3 bg-muted/30 border border-border/50 rounded-lg">
-                    <div class="p-2 bg-background rounded-md shadow-sm border border-border/20">
-                        <Mail class="size-4 text-muted-foreground" />
+            <div v-if="step === 'MANAGEMENT'" class="py-6 flex flex-col items-center justify-center gap-6">
+                <div
+                    class="flex w-full items-center gap-4 px-4 py-4 bg-zinc-50/50 dark:bg-zinc-900/30 border border-zinc-200/50 dark:border-zinc-800/50 rounded-2xl transition-all">
+                    <div
+                        class="p-2.5 bg-white dark:bg-zinc-800 rounded-xl shadow-sm border border-zinc-200/50 dark:border-zinc-700/50">
+                        <Mail class="size-5 text-zinc-600 dark:text-zinc-400" />
                     </div>
-                    <div class="flex flex-col">
-                        <span class="text-xs text-muted-foreground leading-none mb-1">Current Email</span>
-                        <span class="text-sm font-semibold tracking-tight">{{ props.email }}</span>
+                    <div class="flex flex-col gap-0.5">
+                        <span
+                            class="text-[10px] font-bold uppercase tracking-widest text-zinc-400 dark:text-zinc-500">Current
+                            Email</span>
+                        <span class="text-sm font-bold text-zinc-900 dark:text-zinc-100 tracking-tight">{{ props.email
+                        }}</span>
                     </div>
                 </div>
 
-                <div class="mt-2 flex w-full gap-2">
-                    <Button variant="outline" class="flex-1 rounded-full" @click="enterForm('BIND')">
+                <div class="flex w-full gap-3">
+                    <Button variant="outline"
+                        class="flex-1 h-11 rounded-xl border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-900 font-semibold transition-all active:scale-[0.98]"
+                        @click="enterForm('BIND')">
                         Update Email
                     </Button>
-                    <Button variant="destructive" class="flex-1 rounded-full" @click="enterForm('UNBIND')">
+                    <Button variant="destructive" class="flex-1 h-11 rounded-xl 
+                            bg-red-500/10 text-red-600 hover:bg-red-500 hover:text-white 
+                            dark:bg-red-500/20 dark:text-red-400 dark:hover:bg-red-500 dark:hover:text-white
+                            border-none transition-all active:scale-[0.98] font-semibold" @click="enterForm('UNBIND')">
                         Remove Email
                     </Button>
                 </div>
             </div>
 
-            <form v-show="step === 'FORM'" @submit="handleFormSubmit" class="grid gap-6 py-4">
+            <form v-show="step === 'FORM'" @submit="handleFormSubmit" class="grid gap-5 py-4">
                 <FormField v-slot="{ componentField }" name="password">
-                    <FormItem>
-                        <FormLabel>Current Password</FormLabel>
+                    <FormItem class="grid gap-1.5 space-y-0">
+                        <FormLabel
+                            class="text-xs font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500 ml-1">
+                            Current Password</FormLabel>
                         <FormControl>
                             <Input type="password" placeholder="Enter your current password" v-bind="componentField"
-                                autocomplete="current-password" />
+                                autocomplete="current-password"
+                                class="h-11 rounded-xl border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/30 focus-visible:ring-zinc-200 dark:focus-visible:ring-zinc-800" />
                         </FormControl>
                     </FormItem>
                 </FormField>
 
                 <FormField v-if="mode === 'BIND'" v-slot="{ componentField }" name="email">
-                    <FormItem>
-                        <FormLabel>New Email Address</FormLabel>
+                    <FormItem class="grid gap-1.5 space-y-0">
+                        <FormLabel
+                            class="text-xs font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500 ml-1">New
+                            Email Address</FormLabel>
                         <FormControl>
-                            <Input placeholder="name@example.com" v-bind="componentField" autocomplete="email" />
+                            <Input placeholder="name@example.com" v-bind="componentField" autocomplete="email"
+                                class="h-11 rounded-xl border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/30 focus-visible:ring-zinc-200 dark:focus-visible:ring-zinc-800" />
                         </FormControl>
                     </FormItem>
                 </FormField>
@@ -62,21 +80,22 @@
                     <div ref="turnstileElement" id="turnstile-container" class="w-full"></div>
                 </div>
 
-                <DialogFooter class="mt-4">
-                    <Button type="button" variant="ghost" class="rounded-full" @click="backToPrev">
+                <DialogFooter class="mt-2 flex gap-2">
+                    <Button type="button" variant="ghost"
+                        class="flex-1 rounded-xl text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800/50"
+                        @click="backToPrev">
                         Back
                     </Button>
-                    <Button type="submit" :disabled="isLoading || !isFormValid" class="rounded-full">
+                    <Button type="submit" :disabled="isLoading || !isFormValid"
+                        class="flex-1 rounded-xl bg-zinc-900 dark:bg-zinc-100 text-zinc-50 dark:text-zinc-900 hover:opacity-90 active:scale-[0.98] shadow-md transition-all font-semibold">
                         <Loader2 v-if="isLoading" class="mr-2 h-4 w-4 animate-spin" />
-                        {{ mode === 'BIND' ? 'Send Verification Code' : 'Confirm Remove' }}
+                        {{ mode === 'BIND' ? 'Send Code' : 'Confirm Remove' }}
                     </Button>
                 </DialogFooter>
             </form>
 
-            <div v-show="step === 'OTP'" class="flex flex-col items-center gap-6 py-4">
-                <p class="text-center text-xs text-muted-foreground">
-                    Sent to {{ form.values.email }}
-                </p>
+            <div v-show="step === 'OTP'" class="flex flex-col items-center gap-8 py-6">
+                <p class="text-xs text-zinc-500 dark:text-zinc-400">Sent to {{ form.values.email }}</p>
 
                 <FormField v-slot="{ value, handleChange }" name="code">
                     <FormItem class="flex flex-col items-center">
@@ -96,8 +115,9 @@
                     </FormItem>
                 </FormField>
 
-                <Button variant="link" class="text-xs hover:cursor-pointer" :disabled="isLoading"
-                    @click="handleResendCode">
+                <Button variant="link"
+                    class="text-xs text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-300 no-underline hover:underline decoration-zinc-300 transition-all"
+                    :disabled="isLoading" @click="handleResendCode">
                     Didn't receive a code? Go back and resend
                 </Button>
             </div>
@@ -143,7 +163,6 @@ import {
     unbindEmail
 } from '@/services/user';
 import { maskEmail } from '@/utils/maskEmail';
-
 
 const props = defineProps<{ email?: string | null }>();
 
