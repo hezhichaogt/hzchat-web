@@ -2,7 +2,7 @@
 // Type definitions for the core user data structure.
 //
 
-export type UserRole = 'guest' | 'registered' | 'subscriber' | 'admin'
+export type UserRole = 'guest' | 'member' | 'pro' | 'admin'
 
 export interface UserBase {
   id: string
@@ -13,6 +13,7 @@ export interface UserBase {
 
 export interface UserProfile extends UserBase {
   planType: string
-  lastLoginAt: string | null
+  planExpiresAt: string | null
   email: string
+  lastLoginAt: string | null
 }

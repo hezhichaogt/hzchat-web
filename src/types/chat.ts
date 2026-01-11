@@ -5,9 +5,8 @@
 import type { UserBase, UserProfile } from './user'
 import type { Attachment } from './file'
 
-export type ChatType = 'private' | 'group'
 export type MessageStatus = 'sending' | 'sent' | 'failed'
-export type SystemStyleType = 'default' | 'error'
+export type SystemStyleType = 'default' | 'error' | 'info' | 'warning'
 
 export type ConnectionStatus =
   | 'INIT'

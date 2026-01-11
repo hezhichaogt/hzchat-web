@@ -1,7 +1,8 @@
 <template>
   <header :class="cn(
     'w-full p-4 flex justify-center bg-background/80 backdrop-blur-md',
-    'animate-in fade-in slide-in-from-top-4'
+    'animate-in fade-in slide-in-from-top-4',
+    !route.meta.hideHeaderBorder ? 'border-b border-border' : 'border-b-transparent'
   )">
 
     <div :class="cn(
@@ -19,8 +20,11 @@
 </template>
 
 <script setup lang="ts">
+import { useRoute } from 'vue-router'
 import { cn } from '@/lib/utils'
 import Logo from './Logo.vue';
+
+const route = useRoute()
 
 interface Props {
   maxWidth?: string

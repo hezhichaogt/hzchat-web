@@ -4,17 +4,14 @@
 
 import { post } from '@/utils/request'
 import { useUserStore } from '@/stores/user'
-import type { ChatType } from '@/types/chat'
 
 interface CreateChatResponse {
   chatCode: string
 }
 
-export async function createChat(type: ChatType): Promise<CreateChatResponse> {
+export async function createChat(): Promise<CreateChatResponse> {
   const url = '/chat/create'
-  const data = { type }
-
-  return await post<CreateChatResponse>(url, data)
+  return await post<CreateChatResponse>(url)
 }
 
 interface JoinChatResponse {

@@ -27,6 +27,7 @@ const routes: Array<RouteRecordRaw> = [
         path: '',
         name: 'Home',
         component: HomeView,
+        meta: { hideHeaderBorder: true },
       },
       {
         path: '/privacy',

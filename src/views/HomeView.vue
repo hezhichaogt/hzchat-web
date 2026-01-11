@@ -1,8 +1,9 @@
 <template>
-  <div class="w-full max-w-2xl px-1 py-10 flex flex-col gap-12 mx-auto animate-in fade-in zoom-in-95">
+  <div
+    class="flex-1 flex flex-col justify-center w-full max-w-2xl mx-auto py-10 lg:pb-32 animate-in fade-in zoom-in-95">
 
-    <div class="flex flex-col gap-6 px-2">
-      <h1 class="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tighter leading-[1.1] text-foreground">
+    <div class="flex flex-col gap-6 px-2 mb-16 sm:mb-20">
+      <h1 class="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tighter leading-[1.05] text-foreground">
         Zero-Record <br />
         <span class="inline-block text-primary">Messaging.</span>
         <span class="text-foreground/30 block mt-4 font-medium tracking-[0.2em] uppercase text-base sm:text-lg">
@@ -18,9 +19,9 @@
       </p>
     </div>
 
-    <section v-if="!userStore.isLoggedIn" class="px-2">
+    <section v-if="!userStore.isLoggedIn" class="px-2 mb-8 sm:mb-12">
       <div
-        class="flex items-center justify-between h-12 px-4 rounded-xl border border-foreground/3 bg-foreground/1 dark:bg-white/3 group">
+        class="flex items-center justify-between h-14 px-5 rounded-3xl border border-foreground/5 bg-foreground/2 dark:bg-white/2 backdrop-blur-sm group">
         <div class="flex items-center gap-2">
           <Fingerprint class="size-3.5 text-foreground/40" />
           <span class="text-[10px] font-black tracking-widest uppercase text-foreground/40">ID</span>
@@ -34,7 +35,7 @@
           class="flex items-center gap-1.5 px-2 py-1.5 rounded-lg transition-all duration-300 active:scale-95 group/btn"
           title="Generate New ID">
           <Dice5
-            class="size-3.5 text-foreground/50 group-hover/btn:text-primary/80 group-hover/btn:rotate-15 transition-all duration-300" />
+            class="size-3.5 text-foreground/50 group-hover/btn:text-primary transition-transform duration-500 ease-in-out group-hover/btn:rotate-180" />
           <span
             class="text-[10px] font-black uppercase tracking-[0.15em] text-foreground/50 group-hover/btn:text-foreground/90 transition-colors">
             New ID
@@ -43,59 +44,53 @@
       </div>
     </section>
 
-    <div class="flex flex-col gap-6">
-      <div class="flex flex-col sm:flex-row gap-4 px-2">
+    <div class="flex flex-col gap-8">
+      <div class="px-2">
         <Button size="lg"
-          class="w-full sm:flex-1 h-14 text-base font-extrabold transition-all active:scale-[0.97] shadow-md hover:shadow-primary/20 dark:shadow-primary/5 hover:cursor-pointer"
-          @click="createPrivateChat" :disabled="isBusy">
-          <div class="flex items-center justify-center w-full gap-2">
-            <Loader2 v-if="isBusy" class="mr-3 h-5 w-5 animate-spin" />
-            <MessageSquare v-else class="mr-3 h-5 w-5" />
-            <span>Create Private Chat</span>
-          </div>
-        </Button>
-
-        <Button variant="outline" size="lg"
-          class="w-full sm:flex-1 h-14 text-base font-bold border-2 transition-all active:scale-[0.97] dark:border-white/10 dark:hover:bg-white/5 hover:cursor-pointer"
-          @click="createGroupChat" :disabled="isBusy">
-          <div class="flex items-center justify-center w-full gap-2">
-            <Loader2 v-if="isBusy" class="mr-3 h-5 w-5 animate-spin" />
-            <Users v-else class="mr-3 h-5 w-5 opacity-70" />
-            <span>Create Group Chat</span>
+          class="w-full h-16 text-lg font-black transition-fluid rounded-3xl active:scale-[0.98] shadow-xl hover:shadow-primary/20 dark:shadow-primary/10 hover:cursor-pointer group/main"
+          @click="handleCreateChat" :disabled="isBusy">
+          <div class="flex items-center justify-center gap-3">
+            <Loader2 v-if="isBusy" class="size-6 animate-spin" />
+            <template v-else>
+              <Plus class="size-6 transition-transform group-hover/main:rotate-90 duration-500" />
+              <span class="tracking-tight">Start New Chat</span>
+            </template>
           </div>
         </Button>
       </div>
 
-      <div class="relative py-4 flex items-center justify-center">
-        <div class="absolute inset-x-0 h-px bg-linear-to-r from-transparent via-foreground/10 to-transparent">
-        </div>
-        <span class="relative bg-background px-6 text-[10px] uppercase font-black tracking-[0.4em] text-foreground/30">
-          OR
+      <div class="relative flex items-center justify-center">
+        <div class="absolute inset-x-0 h-px bg-linear-to-r from-transparent via-border to-transparent"></div>
+        <span
+          class="relative bg-background px-6 text-[10px] uppercase font-black tracking-[0.5em] text-muted-foreground/40">
+          Have a chat code?
         </span>
       </div>
 
       <div class="px-2">
         <InputGroup
-          class="h-14 border border-foreground/10 dark:border-white/10 dark:bg-white/3 rounded-xl overflow-hidden transition-all duration-300 focus-within:border-primary/40 focus-within:ring-4 focus-within:ring-primary/5 shadow-sm">
-          <InputGroupInput v-model="chatCodeInput" placeholder="ENTER CHAT CODE" maxlength="6"
-            class="px-6 md:px-4 font-mono tracking-[0.3em] focus-visible:ring-0 border-0 placeholder:font-sans placeholder:tracking-normal placeholder:text-xs placeholder:font-bold placeholder:opacity-40 text-xl!"
+          class="h-16 border-2 border-muted bg-muted/30 dark:bg-white/3 rounded-3xl overflow-hidden transition-fluid focus-within:border-primary/50 focus-within:ring-8 focus-within:ring-primary/5 shadow-inner">
+          <InputGroupInput v-model="chatCodeInput" placeholder="CHAT CODE" maxlength="16" @keyup.enter="handleJoinChat"
+            class="px-8 font-mono tracking-[0.4em] focus-visible:ring-0 border-0 bg-transparent text-2xl! placeholder:font-sans placeholder:tracking-normal placeholder:text-sm placeholder:font-bold placeholder:opacity-30"
             :disabled="isBusy" />
 
           <InputGroupAddon align="inline-end" class="pr-3">
-            <InputGroupButton @click="handleJoinChat" :disabled="isBusy || chatCodeInput.length < 6" variant="secondary"
-              size="sm" class="hover:cursor-pointer transition-fluid font-bold px-5 rounded-lg">
+            <InputGroupButton @click="handleJoinChat" variant="ghost" size="sm" :class="[
+              'h-10 px-6 rounded-2xl font-black transition-all duration-300 flex items-center gap-2 shadow-none! bg-secondary group/join',
+              chatCodeInput.trim().length >= 4
+                ? 'text-secondary-foreground/50 opacity-100 hover:text-secondary-foreground'
+                : 'text-secondary-foreground/20 opacity-50 pointer-events-none'
+            ]">
               <Loader2 v-if="isBusy" class="size-5 animate-spin" />
               <template v-else>
-                <div class="flex justify-center items-center gap-1">
-                  <span class="text-sm tracking-wide">JOIN</span>
-                  <ChevronRight class="size-4 opacity-70" />
-                </div>
+                <span class="text-[12px] tracking-[0.2em] -mr-1.5">JOIN</span>
+                <ChevronRight
+                  class="size-4 opacity-50 transition-transform duration-300 group-hover/join:translate-x-1" />
               </template>
             </InputGroupButton>
           </InputGroupAddon>
         </InputGroup>
       </div>
-
     </div>
   </div>
 </template>
@@ -116,16 +111,14 @@ import {
 
 import {
   Loader2,
-  Users,
-  MessageSquare,
   ChevronRight,
   Fingerprint,
-  Dice5
+  Dice5,
+  Plus
 } from 'lucide-vue-next';
 
 import { useUserStore } from '@/stores/user';
 import { createChat, joinChat } from '@/services/chat';
-import type { ChatType } from '@/types/chat';
 
 useHead({
   meta: [
@@ -150,12 +143,12 @@ const handleResetIdentity = () => {
   }
 }
 
-const handleCreateChat = async (type: ChatType) => {
+const handleCreateChat = async () => {
   if (isBusy.value) return;
   isBusy.value = true;
 
   try {
-    const { chatCode } = await createChat(type);
+    const { chatCode } = await createChat();
     router.push(`/chat/${chatCode}`);
   } catch (error: any) {
     console.error(error.message)
@@ -165,20 +158,22 @@ const handleCreateChat = async (type: ChatType) => {
   }
 };
 
-const createPrivateChat = () => handleCreateChat('private');
-const createGroupChat = () => handleCreateChat('group');
-
 const handleJoinChat = async () => {
   const trimmedCode = chatCodeInput.value.trim();
-  const REQUIRED_LENGTH = 6;
 
   if (!trimmedCode) {
     toast.warning('Please enter a chat code.');
     return;
   }
 
-  if (trimmedCode.length !== REQUIRED_LENGTH) {
-    toast.error(`Please enter a valid ${REQUIRED_LENGTH}-character chat code.`);
+  if (trimmedCode.length < 4 || trimmedCode.length > 16) {
+    toast.error('Chat code must be between 4 and 16 characters.');
+    return;
+  }
+
+  const codeRegex = /^[a-zA-Z0-9_-]+$/;
+  if (!codeRegex.test(trimmedCode)) {
+    toast.error('Only letters, numbers, underscores (_), and hyphens (-) are allowed.');
     return;
   }
 
@@ -188,14 +183,13 @@ const handleJoinChat = async () => {
   try {
     const { token } = await joinChat(trimmedCode);
     if (!token) throw new Error('No access token received.');
-
     router.push({
       path: `/chat/${trimmedCode}`,
       state: { token }
     });
   } catch (error: any) {
-    console.error(error.message)
-    toast.error('Failed to join chat. Please check the code and try again.');
+    console.error(error.message);
+    toast.error(error.message || 'Failed to join chat. Please check the code and try again.');
   } finally {
     isBusy.value = false;
   }
