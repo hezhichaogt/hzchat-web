@@ -1,22 +1,11 @@
-//
-// WebSocket Connection Management Hook
-// Implements exponential backoff strategy and fault tolerance.
-//
-
 import { ref, onUnmounted, type Ref, computed } from 'vue'
 import type { ConnectionStatus, OutboundMessage } from '@/types/chat'
 import { toast } from 'vue-sonner'
 
 const MAX_RETRIES = 8
-const INITIAL_DELAY_MS = 1000
-const MAX_DELAY_MS = 30000
+const INITIAL_DELAY_MS = 2000
+const MAX_DELAY_MS = 60 * 1000
 const BACKOFF_FACTOR = 2
-
-const NORMAL_CLOSE_CODES = [1000, 1001]
-const ABNORMAL_CLOSE_CODE = 1006
-const MAX_ABNORMAL_CLOSES = 3
-const RATE_LIMIT_DELAY_MS = 3 * 60 * 1000
-
 const WS_CLOSE_CODE_SESSION_KICKED = 4001
 
 interface WebSocketOptions {
@@ -29,15 +18,15 @@ export function useWebSocketReconnector({ wsUrl, onMessage, onConnected }: WebSo
   const wsRef = ref<WebSocket | null>(null)
   const connectStatus = ref<ConnectionStatus>('INIT')
   const retryCount = ref(0)
-  const abnormalCloseCount = ref(0)
   const hasConnectedEver = ref(false)
 
   let reconnectTimer: number | null = null
   let isUserClose = false
 
   const calculateDelay = (attempt: number): number => {
-    const delay = INITIAL_DELAY_MS * BACKOFF_FACTOR ** attempt
-    return Math.min(delay, MAX_DELAY_MS)
+    const baseDelay = INITIAL_DELAY_MS * BACKOFF_FACTOR ** attempt
+    const jitter = (Math.random() * 0.4 - 0.2) * baseDelay
+    return Math.min(baseDelay + jitter, MAX_DELAY_MS)
   }
 
   const clearReconnectTimer = () => {
@@ -47,92 +36,71 @@ export function useWebSocketReconnector({ wsUrl, onMessage, onConnected }: WebSo
     }
   }
 
-  // Connection Logic
   const initiateConnection = () => {
+    if (connectStatus.value === 'CONNECTING') return
+
     if (!wsUrl.value) {
       connectStatus.value = 'FATAL_ERROR'
       return
     }
 
     if (wsRef.value) {
+      wsRef.value.onopen = null
+      wsRef.value.onmessage = null
       wsRef.value.onclose = null
+      wsRef.value.onerror = null
       wsRef.value.close()
       wsRef.value = null
     }
-    clearReconnectTimer()
 
+    clearReconnectTimer()
+    isUserClose = false
     connectStatus.value = 'CONNECTING'
 
     try {
       const ws = new WebSocket(wsUrl.value)
       wsRef.value = ws
-
       ws.onopen = handleWsOpen
       ws.onmessage = onMessage
       ws.onclose = handleWsClose
       ws.onerror = handleWsError
     } catch (e) {
-      console.error('Error creating WebSocket instance:', e)
+      console.error('WebSocket Error:', e)
       connectStatus.value = 'FATAL_ERROR'
-      wsRef.value = null
     }
   }
 
-  // Event Handlers
   const handleWsOpen = () => {
     connectStatus.value = 'CONNECTED'
     retryCount.value = 0
-    abnormalCloseCount.value = 0
     hasConnectedEver.value = true
     onConnected()
   }
 
   const handleWsClose = (event: CloseEvent) => {
-    console.warn(`WebSocket closed: Code ${event.code}, Reason: ${event.reason}`)
+    console.warn(`WebSocket closed: Code ${event.code}`)
 
     if (event.code === WS_CLOSE_CODE_SESSION_KICKED) {
-      toast.error("You've signed in elsewhere. This chat has been disconnected.")
+      toast.error("You've signed in elsewhere.")
       connectStatus.value = 'FINAL_DISCONNECT'
       return
     }
 
-    if (
-      isUserClose ||
-      connectStatus.value === 'FINAL_DISCONNECT' ||
-      NORMAL_CLOSE_CODES.includes(event.code)
-    ) {
-      connectStatus.value = 'FINAL_DISCONNECT'
+    if (!hasConnectedEver.value && retryCount.value >= 3) {
+      connectStatus.value = 'FATAL_ERROR'
       return
     }
 
-    if (event.code === ABNORMAL_CLOSE_CODE) {
-      abnormalCloseCount.value++
-      if (abnormalCloseCount.value >= MAX_ABNORMAL_CLOSES) {
-        startLongDelayLoop()
-        return
-      }
-    } else {
-      abnormalCloseCount.value = 0
+    if (isUserClose) {
+      connectStatus.value = 'FINAL_DISCONNECT'
+      return
     }
 
     startReconnectLoop()
   }
 
   const handleWsError = (error: Event) => {
-    console.error('WebSocket error:', error)
-    wsRef.value?.close(4000, 'Error occurred, attempting reconnect.')
-  }
-
-  // Reconnection Scheduling
-  const startLongDelayLoop = () => {
-    clearReconnectTimer()
-    abnormalCloseCount.value = 0
-    retryCount.value = 0
-    connectStatus.value = 'RECONNECT_DELAY'
-
-    reconnectTimer = setTimeout(() => {
-      initiateConnection()
-    }, RATE_LIMIT_DELAY_MS) as unknown as number
+    console.error('WebSocket connection encountered an error:', error)
   }
 
   const startReconnectLoop = () => {
@@ -140,6 +108,7 @@ export function useWebSocketReconnector({ wsUrl, onMessage, onConnected }: WebSo
 
     if (retryCount.value >= MAX_RETRIES) {
       connectStatus.value = 'FINAL_DISCONNECT'
+      toast.error('Connection lost. Please refresh the page.')
       return
     }
 
@@ -152,7 +121,6 @@ export function useWebSocketReconnector({ wsUrl, onMessage, onConnected }: WebSo
     }, delay) as unknown as number
   }
 
-  // Public Actions
   const sendData = (data: OutboundMessage) => {
     if (wsRef.value && wsRef.value.readyState === WebSocket.OPEN) {
       try {
@@ -168,20 +136,19 @@ export function useWebSocketReconnector({ wsUrl, onMessage, onConnected }: WebSo
 
   const closeConnectionByUser = () => {
     isUserClose = true
-    if (wsRef.value) {
-      wsRef.value.close(1000, 'User actively left the chat.')
-    }
     clearReconnectTimer()
+    if (wsRef.value) {
+      wsRef.value.close(1000)
+    }
     connectStatus.value = 'FINAL_DISCONNECT'
-    wsRef.value = null
   }
 
-  // Cleanup
   onUnmounted(() => {
+    isUserClose = true
     clearReconnectTimer()
     if (wsRef.value) {
       wsRef.value.onclose = null
-      wsRef.value.close(1000, 'Component unmounted.')
+      wsRef.value.close(1000)
     }
   })
 
