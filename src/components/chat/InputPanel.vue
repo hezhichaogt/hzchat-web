@@ -1,5 +1,5 @@
 <template>
-    <footer class="w-full px-0 md:px-4 md:pb-4 pt-2 shrink-0 z-20 bg-zinc-50 dark:bg-zinc-950">
+    <footer class="w-full px-0 md:px-4 md:pb-4 shrink-0 z-20 bg-zinc-50 dark:bg-zinc-950">
         <div class="max-w-3xl mx-auto">
             <div class="relative bg-white dark:bg-zinc-900 transition-all duration-300
                     rounded-none border-t border-zinc-200/60 dark:border-zinc-800/60 
