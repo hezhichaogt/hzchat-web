@@ -19,7 +19,7 @@
             </div>
         </div>
 
-        <ImagePreviewer v-model="isPreviewOpen" :src="previewUrl" />
+        <ImagePreviewer v-model="isPreviewOpen" :src="previewUrl" :mimeType="previewMimeType" />
     </main>
 </template>
 
@@ -45,9 +45,11 @@ let intervalId: number | undefined;
 
 const isPreviewOpen = ref(false);
 const previewUrl = ref('');
+const previewMimeType = ref('');
 
-const handleOpenPreview = (url: string) => {
+const handleOpenPreview = (url: string, mimeType: string) => {
     previewUrl.value = url;
+    previewMimeType.value = mimeType;
     isPreviewOpen.value = true;
 };
 

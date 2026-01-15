@@ -14,12 +14,13 @@
                             class="relative group w-16 h-16 bg-zinc-50 dark:bg-zinc-950 rounded-xl overflow-hidden border border-zinc-200/80 dark:border-zinc-700/80 shadow-sm transition-all">
 
                             <img v-if="file.mimeType.startsWith('image/') && file.previewUrl" :src="file.previewUrl"
-                                @click="handleImagePreview(file.previewUrl)" class="w-full h-full object-cover" />
+                                @click="handleImagePreview(file)" class="w-full h-full" :class="{
+                                    'object-cover': file.mimeType !== 'image/svg+xml',
+                                    'object-contain bg-white/90 p-2': file.mimeType === 'image/svg+xml',
+                                    'image-rendering-pixelated': file.mimeType === 'image/gif'
+                                }" />
 
-                            <div v-else
-                                class="w-full h-full flex items-center justify-center bg-zinc-100 dark:bg-zinc-800/50">
-                                <FileText class="w-7 h-7 text-zinc-500/70" />
-                            </div>
+                            <DocCard v-else :file-name="file.fileName" :mime-type="file.mimeType" />
 
                             <div v-if="file.status === 'uploading'"
                                 class="absolute inset-0 bg-white/60 dark:bg-black/60 flex items-center justify-center backdrop-blur-sm transition-opacity">
@@ -42,7 +43,7 @@
                     </div>
                 </div>
 
-                <ImagePreviewer v-model="isPreviewOpen" :src="previewUrl" />
+                <ImagePreviewer v-model="isPreviewOpen" :src="previewUrl" :mimeType="activeFileMimeType" />
 
                 <div class="px-4 py-3">
                     <textarea ref="textareaRef" v-model="textContent" :placeholder="dynamicPlaceholder" rows="1" class="w-full bg-transparent border-none resize-none 
@@ -60,8 +61,8 @@
                             title="Add attachment">
                             <Paperclip class="w-5 h-5" />
                         </button>
-                        <input type="file" ref="fileInputRef" class="hidden" multiple :accept="allowedAttachmentTypes"
-                            @change="handleFileChange" />
+                        <input type="file" ref="fileInputRef" class="hidden" multiple
+                            :accept="[...AllowedTypes, ...ALLOWED_EXTS].join(',')" @change="handleFileChange" />
 
                         <Popover v-model:open="isEmojiOpen">
                             <PopoverTrigger as-child>
@@ -106,11 +107,12 @@
 import { ref, computed, watch, nextTick, onMounted } from 'vue';
 import {
     Paperclip, Smile, SendHorizontal,
-    Loader2, AlertCircle, FileText, X
+    Loader2, AlertCircle, X
 } from 'lucide-vue-next';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { toast } from 'vue-sonner';
 import ImagePreviewer from '@/components/ImagePreviewer.vue';
+import DocCard from './DocCard.vue';
 import type { UploadAttachment } from '@/types/file';
 import type { ConnectionStatus } from '@/types/chat';
 
@@ -129,8 +131,49 @@ const fileInputRef = ref<HTMLInputElement | null>(null);
 const isEmojiOpen = ref(false);
 const isPreviewOpen = ref(false);
 const previewUrl = ref('');
+const activeFileMimeType = ref('');
 
-const allowedAttachmentTypes = 'image/jpeg,image/png,image/webp,image/gif';
+const IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/avif', 'image/svg+xml'];
+const PDF_TYPE = ['application/pdf'];
+const OFFICE_TYPES = [
+    'application/msword',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'application/vnd.ms-excel',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    'application/vnd.ms-powerpoint',
+    'application/vnd.openxmlformats-officedocument.presentationml.presentation'
+];
+const TEXT_TYPES = [
+    'text/plain',
+    'text/markdown'
+];
+const ARCHIVE_TYPES = [
+    'application/x-compressed',
+    'application/zip',
+    'application/x-zip',
+    'application/x-zip-compressed',
+    'application/vnd.rar',
+    'application/x-rar',
+    'application/x-rar-compressed',
+    'application/x-7z-compressed',
+    'application/x-tar',
+    'application/gzip',
+    'application/x-gzip'
+];
+const AllowedTypes = [
+    ...IMAGE_TYPES,
+    ...PDF_TYPE,
+    ...OFFICE_TYPES,
+    ...TEXT_TYPES,
+    ...ARCHIVE_TYPES
+];
+const ALLOWED_EXTS = [
+    '.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg', '.avif',
+    '.pdf', '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx',
+    '.txt', '.md',
+    '.zip', '.7z', '.rar', '.tar', '.gz'
+];
+
 const emojis = [
     '😂', '🤣', '😊', '😍', '🥰', '😘', '🤩', '🥳', '😎', '😋',
     '🤔', '🧐', '🤨', '🙄', '😏', '😅', '😭', '🥺', '🫠', '🙃',
@@ -182,14 +225,26 @@ const handleFileChange = (event: Event) => {
     }
 
     const filesToEmit: UploadAttachment[] = [];
-    const allowedTypes = new Set(allowedAttachmentTypes.split(',').map(t => t.trim()));
 
     newFilesArray.forEach(file => {
-        if (!allowedTypes.has(file.type)) return;
+        const ext = `.${file.name.split('.').pop()?.toLowerCase()}`;
 
-        let previewUrl = '';
-        if (file.type.startsWith('image/')) {
-            previewUrl = URL.createObjectURL(file);
+        const isAllowedMime = AllowedTypes.includes(file.type);
+        const isAllowedExt = ALLOWED_EXTS.includes(ext);
+
+        if (!isAllowedMime && !isAllowedExt) {
+            console.warn(`File rejected: ${file.name} (Type: ${file.type})`);
+            return;
+        }
+
+        const isImage = file.type.startsWith('image/');
+        const previewUrl = isImage ? URL.createObjectURL(file) : '';
+
+        let finalMimeType = file.type;
+        if (ext === '.md') {
+            finalMimeType = 'text/markdown';
+        } else if (!finalMimeType) {
+            finalMimeType = 'application/octet-stream';
         }
 
         filesToEmit.push({
@@ -199,7 +254,7 @@ const handleFileChange = (event: Event) => {
             status: 'pending',
             fileKey: '',
             fileName: file.name,
-            mimeType: file.type,
+            mimeType: finalMimeType,
             fileSize: file.size,
         });
     });
@@ -215,8 +270,9 @@ const removeFile = (fileId: string, previewUrl: string) => {
     emit('file-removed', fileId);
 };
 
-const handleImagePreview = (url: string) => {
-    previewUrl.value = url;
+const handleImagePreview = (file: UploadAttachment) => {
+    previewUrl.value = file.previewUrl;
+    activeFileMimeType.value = file.mimeType;
     isPreviewOpen.value = true;
 };
 

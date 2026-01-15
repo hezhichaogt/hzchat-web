@@ -11,9 +11,11 @@
                 </button>
 
                 <div class="relative w-full h-full flex items-center justify-center p-4 md:p-12 overflow-hidden">
-                    <img :src="src" class="max-w-[95%] max-h-[95%] object-contain select-none shadow-[0_0_50px_rgba(0,0,0,0.5)] 
-                               rounded-lg border border-white/10 cursor-default transition-all duration-300"
-                        @click.stop alt="Preview" />
+                    <img :src="src"
+                        class="max-w-[95%] max-h-[95%] object-contain select-none shadow-2xl transition-all duration-300"
+                        :class="{
+                            'bg-white p-10 md:p-20 rounded-2xl shadow-[0_0_40px_rgba(255,255,255,0.1)]': mimeType === 'image/svg+xml'
+                        }" @click.stop alt="Preview" />
                 </div>
             </div>
         </Transition>
@@ -27,6 +29,7 @@ import { X } from 'lucide-vue-next';
 const props = defineProps<{
     modelValue: boolean;
     src: string;
+    mimeType?: string;
 }>();
 
 const emit = defineEmits(['update:modelValue']);

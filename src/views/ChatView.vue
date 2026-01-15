@@ -463,6 +463,8 @@ const handleResendMessage = (failedMessage: UserMessage) => {
 
 // File Uploading
 const MAX_FILE_COUNT = 3;
+const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024;
+const compressibleImageTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/avif'];
 const filesToUpload = ref<UploadAttachment[]>([]);
 
 const updateFileInArray = (updatedFile: UploadAttachment) => {
@@ -474,17 +476,23 @@ const updateFileInArray = (updatedFile: UploadAttachment) => {
 const uploadFile = async (file: UploadAttachment): Promise<UploadAttachment> => {
   let currentFile = { ...file };
   let fileToUpload: File = file.originFile;
-  const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024;
 
   try {
-    if (file.mimeType.startsWith('image/') && file.mimeType !== 'image/gif') {
+    const isMarkdown = currentFile.fileName.toLowerCase().endsWith('.md');
+    if (isMarkdown) {
+      currentFile.mimeType = 'text/markdown';
+      fileToUpload = new File([fileToUpload], currentFile.fileName, { type: 'text/markdown' });
+    }
+
+    if (compressibleImageTypes.includes(file.mimeType)) {
       const options = {
-        maxSizeMB: 4.8,
+        maxSizeMB: 9,
         maxWidthOrHeight: 1920,
         initialQuality: 0.8,
         fileType: 'image/webp',
         useWebWorker: true,
       };
+
       const compressedBlob = await imageCompression(file.originFile, options);
 
       if (compressedBlob.size < file.fileSize) {
@@ -497,7 +505,7 @@ const uploadFile = async (file: UploadAttachment): Promise<UploadAttachment> => 
     }
 
     if (fileToUpload.size > MAX_FILE_SIZE_BYTES) {
-      throw new Error('File too large (max 5 MB).');
+      throw new Error('File too large (max 10 MB).');
     }
 
     const { presignedUrl, fileKey, fileName } = await presignUpload(
