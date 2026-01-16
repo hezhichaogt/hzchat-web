@@ -10,40 +10,12 @@
 
                 <div v-if="files.length > 0" class="px-4 pt-4">
                     <div class="flex flex-wrap gap-3 pb-3 mb-1 border-b border-zinc-200/50 dark:border-zinc-800/50">
-                        <div v-for="file in files" :key="file.id"
-                            class="relative group w-16 h-16 bg-zinc-50 dark:bg-zinc-950 rounded-xl overflow-hidden border border-zinc-200/80 dark:border-zinc-700/80 shadow-sm transition-all">
-
-                            <img v-if="file.mimeType.startsWith('image/') && file.previewUrl" :src="file.previewUrl"
-                                @click="handleImagePreview(file)" class="w-full h-full" :class="{
-                                    'object-cover': file.mimeType !== 'image/svg+xml',
-                                    'object-contain bg-white/90 p-2': file.mimeType === 'image/svg+xml',
-                                    'image-rendering-pixelated': file.mimeType === 'image/gif'
-                                }" />
-
-                            <DocCard v-else :file-name="file.fileName" :mime-type="file.mimeType" />
-
-                            <div v-if="file.status === 'uploading'"
-                                class="absolute inset-0 bg-white/60 dark:bg-black/60 flex items-center justify-center backdrop-blur-sm transition-opacity">
-                                <Loader2 class="w-5 h-5 text-zinc-700 dark:text-zinc-200 animate-spin" />
-                            </div>
-
-                            <div v-if="file.status === 'failed'"
-                                class="absolute inset-0 bg-red-500/10 flex items-center justify-center backdrop-blur-[1px]">
-                                <AlertCircle class="w-5 h-5 text-red-500 shadow-sm" />
-                            </div>
-
-                            <button @click.stop="removeFile(file.id, file.previewUrl)" class="absolute top-1 right-1 p-1 z-10
-                                    opacity-100 sm:group-hover:opacity-100 sm:opacity-0
-                                    bg-white/90 dark:bg-zinc-800/90 text-zinc-500 dark:text-zinc-400 shadow-md rounded-full 
-                                    hover:text-red-500 dark:hover:text-red-400 active:scale-90
-                                    transition-all duration-200" title="Remove file">
-                                <X class="w-3 h-3" />
-                            </button>
+                        <div v-for="file in files" :key="file.id" class="w-16 h-16 shrink-0">
+                            <Attachment :file="file" @remove="removeFile(file.id, file.previewUrl)"
+                                @preview="handlePreview(file)" />
                         </div>
                     </div>
                 </div>
-
-                <ImagePreviewer v-model="isPreviewOpen" :src="previewUrl" :mimeType="activeFileMimeType" />
 
                 <div class="px-4 py-3">
                     <textarea ref="textareaRef" v-model="textContent" :placeholder="dynamicPlaceholder" rows="1" class="w-full bg-transparent border-none resize-none 
@@ -61,8 +33,9 @@
                             title="Add attachment">
                             <Paperclip class="w-5 h-5" />
                         </button>
-                        <input type="file" ref="fileInputRef" class="hidden" multiple
-                            :accept="[...AllowedTypes, ...ALLOWED_EXTS].join(',')" @change="handleFileChange" />
+                        <input type="file" ref="fileInputRef" class="hidden"
+                            accept="image/*,video/*,audio/*,application/pdf,text/plain,text/markdown,application/octet-stream"
+                            multiple @change="handleFileChange" />
 
                         <Popover v-model:open="isEmojiOpen">
                             <PopoverTrigger as-child>
@@ -106,13 +79,12 @@
 <script setup lang="ts">
 import { ref, computed, watch, nextTick, onMounted } from 'vue';
 import {
-    Paperclip, Smile, SendHorizontal,
-    Loader2, AlertCircle, X
+    Paperclip, Smile, SendHorizontal
 } from 'lucide-vue-next';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { toast } from 'vue-sonner';
-import ImagePreviewer from '@/components/ImagePreviewer.vue';
-import DocCard from './DocCard.vue';
+
+import Attachment from './Attachment.vue';
 import type { UploadAttachment } from '@/types/file';
 import type { ConnectionStatus } from '@/types/chat';
 
@@ -122,58 +94,13 @@ const props = defineProps<{
     maxFiles: number,
 }>()
 
-const emit = defineEmits(['send', 'upload-start', 'file-removed'])
+const emit = defineEmits(['send', 'upload-start', 'file-removed', 'preview'])
 
 const textContent = ref('');
 const textareaRef = ref<HTMLTextAreaElement | null>(null);
 const fileInputRef = ref<HTMLInputElement | null>(null);
 
 const isEmojiOpen = ref(false);
-const isPreviewOpen = ref(false);
-const previewUrl = ref('');
-const activeFileMimeType = ref('');
-
-const IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/avif', 'image/svg+xml'];
-const PDF_TYPE = ['application/pdf'];
-const OFFICE_TYPES = [
-    'application/msword',
-    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-    'application/vnd.ms-excel',
-    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-    'application/vnd.ms-powerpoint',
-    'application/vnd.openxmlformats-officedocument.presentationml.presentation'
-];
-const TEXT_TYPES = [
-    'text/plain',
-    'text/markdown'
-];
-const ARCHIVE_TYPES = [
-    'application/x-compressed',
-    'application/zip',
-    'application/x-zip',
-    'application/x-zip-compressed',
-    'application/vnd.rar',
-    'application/x-rar',
-    'application/x-rar-compressed',
-    'application/x-7z-compressed',
-    'application/x-tar',
-    'application/gzip',
-    'application/x-gzip'
-];
-const AllowedTypes = [
-    ...IMAGE_TYPES,
-    ...PDF_TYPE,
-    ...OFFICE_TYPES,
-    ...TEXT_TYPES,
-    ...ARCHIVE_TYPES
-];
-const ALLOWED_EXTS = [
-    '.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg', '.avif',
-    '.pdf', '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx',
-    '.txt', '.md',
-    '.zip', '.7z', '.rar', '.tar', '.gz'
-];
-
 const emojis = [
     '😂', '🤣', '😊', '😍', '🥰', '😘', '🤩', '🥳', '😎', '😋',
     '🤔', '🧐', '🤨', '🙄', '😏', '😅', '😭', '🥺', '🫠', '🙃',
@@ -228,24 +155,19 @@ const handleFileChange = (event: Event) => {
 
     newFilesArray.forEach(file => {
         const ext = `.${file.name.split('.').pop()?.toLowerCase()}`;
-
-        const isAllowedMime = AllowedTypes.includes(file.type);
-        const isAllowedExt = ALLOWED_EXTS.includes(ext);
-
-        if (!isAllowedMime && !isAllowedExt) {
-            console.warn(`File rejected: ${file.name} (Type: ${file.type})`);
-            return;
-        }
-
-        const isImage = file.type.startsWith('image/');
-        const previewUrl = isImage ? URL.createObjectURL(file) : '';
-
         let finalMimeType = file.type;
+
         if (ext === '.md') {
             finalMimeType = 'text/markdown';
         } else if (!finalMimeType) {
             finalMimeType = 'application/octet-stream';
         }
+
+        const isMedia =
+            finalMimeType.startsWith('image/') ||
+            finalMimeType.startsWith('video/') ||
+            finalMimeType.startsWith('audio/');
+        const previewUrl = isMedia ? URL.createObjectURL(file) : '';
 
         filesToEmit.push({
             id: crypto.randomUUID(),
@@ -270,10 +192,14 @@ const removeFile = (fileId: string, previewUrl: string) => {
     emit('file-removed', fileId);
 };
 
-const handleImagePreview = (file: UploadAttachment) => {
-    previewUrl.value = file.previewUrl;
-    activeFileMimeType.value = file.mimeType;
-    isPreviewOpen.value = true;
+const handlePreview = (file: UploadAttachment) => {
+    const isMedia = file.mimeType.startsWith('image/') ||
+        file.mimeType.startsWith('video/') ||
+        file.mimeType.startsWith('audio/');
+
+    if (isMedia) {
+        emit('preview', file);
+    }
 };
 
 const insertEmoji = (emoji: string) => {

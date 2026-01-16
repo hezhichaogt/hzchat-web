@@ -26,44 +26,18 @@
                 ]">
                     <div v-if="isAttachments" :class="[
                         'p-1 gap-1 grid w-full bg-black/5 dark:bg-white/5',
-                        displayAttachments.length === 1 ? 'grid-cols-1' : '',
+                        displayAttachments.length === 1 ? 'grid-cols-1 w-48 md:w-64' : '',
                         displayAttachments.length === 2 ? 'grid-cols-2 w-60' : '',
                         displayAttachments.length === 3 ? 'grid-cols-3 w-72' : '',
                         displayAttachments.length === 4 ? 'grid-cols-2 w-60' : '',
                         displayAttachments.length >= 5 ? 'grid-cols-3 w-72' : ''
                     ]">
                         <div v-for="attachment in displayAttachments" :key="attachment.fileKey"
-                            class="relative overflow-hidden rounded-lg group/attach" :class="[
-                                attachment.mimeType === 'image/svg+xml' ? 'bg-white p-2' : 'bg-black/5 dark:bg-white/5',
-                                displayAttachments.length === 1 ? 'max-w-full' : 'aspect-square'
+                            class="relative overflow-hidden rounded-lg group/attach min-w-24 min-h-24 shrink-0" :class="[
+                                displayAttachments.length === 1 ? 'w-full aspect-4/3' : 'aspect-square'
                             ]">
 
-                            <template v-if="attachment.mimeType.startsWith('image/')">
-                                <img :src="attachment.url" :alt="attachment.fileName"
-                                    class="transition-transform duration-500 group-hover/attach:scale-105 w-full cursor-zoom-in"
-                                    :class="[
-                                        attachment.mimeType === 'image/svg+xml' ? 'object-contain' : 'object-cover',
-                                        displayAttachments.length === 1 ? 'max-h-80' : 'h-full aspect-square',
-                                        attachment.mimeType === 'image/gif' ? 'image-rendering-pixelated' : ''
-                                    ]" @click="handleImageClick(attachment.url, attachment.mimeType)" />
-                            </template>
-
-                            <template v-else>
-                                <div class="relative group/attach w-full h-full">
-                                    <DocCard :file-name="attachment.fileName" :mime-type="attachment.mimeType" />
-
-                                    <button @click.stop="handleDownload(attachment.url, attachment.fileName)" class="absolute bottom-0.5 right-0.5 w-6 h-6 
-                                            flex items-center justify-center
-                                            bg-white/90 dark:bg-zinc-800/90 backdrop-blur-sm
-                                            border border-zinc-200/50 dark:border-zinc-700/50
-                                            rounded-full shadow-sm
-                                            hover:bg-white dark:hover:bg-zinc-700 
-                                            hover:scale-110 active:scale-90 
-                                            transition-all duration-200 z-10" title="Download">
-                                        <Download class="w-3.5 h-3.5 text-zinc-600 dark:text-zinc-300" />
-                                    </button>
-                                </div>
-                            </template>
+                            <AttachmentCard :file="attachment" @preview="emit('preview', attachment)" />
                         </div>
                     </div>
 
@@ -105,8 +79,8 @@ import { useRoomStore } from '@/stores/room';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import type { UserMessage } from '@/types/chat';
 import type { Attachment } from '@/types/file';
-import { AlertCircle, Download } from 'lucide-vue-next';
-import DocCard from './DocCard.vue';
+import { AlertCircle } from 'lucide-vue-next';
+import AttachmentCard from './Attachment.vue';
 
 const props = defineProps<{
     message: UserMessage;
@@ -114,7 +88,9 @@ const props = defineProps<{
     currentTime: number;
 }>();
 
-const emit = defineEmits(['preview']);
+const emit = defineEmits<{
+    (e: 'preview', file: Attachment): void
+}>();
 
 const roomStore = useRoomStore();
 const VITE_API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
@@ -171,23 +147,5 @@ const handleResendClick = () => {
     if (isFailed.value && props.onResend) {
         props.onResend(props.message);
     }
-};
-
-const handleImageClick = (url: string, mimeType: string) => {
-    emit('preview', url, mimeType);
-};
-
-const handleDownload = (url: string, fileName: string) => {
-    if (!url) return;
-
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', fileName);
-    link.target = '_blank';
-    document.body.appendChild(link);
-
-    link.click();
-
-    document.body.removeChild(link);
 };
 </script>

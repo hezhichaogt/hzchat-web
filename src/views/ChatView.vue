@@ -55,10 +55,16 @@
       <Header :code="chatCode" :connectStatus="connectStatus" :users="onlineUsers" :max-users="maxUsers"
         @leave="handleLeaveChat" />
 
-      <Messages class="bg-transparent" :messages="messages" :on-resend="handleResendMessage" />
+      <ThemeToggle />
+
+      <Messages class="bg-transparent" :messages="messages" :on-resend="handleResendMessage"
+        @preview="openMediaViewer" />
 
       <InputPanel :connectStatus="connectStatus" :files="filesToUpload" :maxFiles="MAX_FILE_COUNT"
-        @send="handleSendMessage" @upload-start="handleUploadStart" @file-removed="handleFileRemoved" />
+        @send="handleSendMessage" @upload-start="handleUploadStart" @file-removed="handleFileRemoved"
+        @preview="openMediaViewer" />
+
+      <MediaViewer v-model="isViewerOpen" :file="activeFile" />
 
     </div>
   </div>
@@ -72,6 +78,8 @@ import { useHead } from '@unhead/vue';
 import Header from '@/components/chat/Header.vue';
 import Messages from '@/components/chat/Messages.vue';
 import InputPanel from '@/components/chat/InputPanel.vue';
+import MediaViewer from '@/components/chat/MediaViewer.vue';
+import ThemeToggle from '@/components/ThemeToggle.vue';
 import { Button } from '@/components/ui/button';
 import { AlertCircle, Zap } from 'lucide-vue-next';
 import { toast } from 'vue-sonner';
@@ -123,8 +131,15 @@ interface ChatInputExpose {
 }
 const chatInputRef = ref<ChatInputExpose | null>(null);
 
+const activeFile = ref<Attachment | UploadAttachment | null>(null);
+const isViewerOpen = ref(false);
 
-// SEO
+const openMediaViewer = (file: Attachment | UploadAttachment) => {
+  activeFile.value = file;
+  isViewerOpen.value = true;
+};
+
+
 const BASE_URL = import.meta.env.VITE_BASE_URL || window.location.origin;
 
 const dynamicTitle = computed(() =>
@@ -378,7 +393,7 @@ const handleSendMessage = (content: string, attachmentsToResend?: Attachment[]) 
       return;
     }
 
-    const failedUploads = filesToUpload.value.filter(f => f.status === 'failed');
+    const failedUploads = filesToUpload.value.filter(f => f.status === 'upload_failed');
 
     if (failedUploads.length > 0) {
       toast.error(`${failedUploads.length} file(s) couldn't be uploaded. Please retry or remove them.`);
@@ -387,7 +402,7 @@ const handleSendMessage = (content: string, attachmentsToResend?: Attachment[]) 
   }
 
   let finalAttachments: Attachment[] = attachmentsToResend || filesToUpload.value
-    .filter(f => f.status === 'success' && f.fileKey)
+    .filter(f => f.status === 'uploaded' && f.fileKey)
     .map(f => ({
       fileKey: f.fileKey!,
       fileName: f.fileName,
@@ -518,7 +533,7 @@ const uploadFile = async (file: UploadAttachment): Promise<UploadAttachment> => 
 
     return {
       ...currentFile,
-      status: 'success' as const,
+      status: 'uploaded' as const,
       fileKey: fileKey,
       fileName: fileName,
     };
@@ -527,7 +542,7 @@ const uploadFile = async (file: UploadAttachment): Promise<UploadAttachment> => 
     toast.error(`Couldn't upload this file.`);
     return {
       ...currentFile,
-      status: 'failed' as const,
+      status: 'upload_failed' as const,
     };
   }
 };
@@ -560,7 +575,6 @@ const handleFileRemoved = (fileId: string) => {
 };
 
 
-// Room Management
 const handleLeaveChat = () => {
   closeConnectionByUser();
   messages.value = [];

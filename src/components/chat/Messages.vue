@@ -9,7 +9,7 @@
                     :ref="(el) => { if (index === messages.length - 1) lastMessageRef = (el as any); }">
                     <template v-if="msg.messageType === 'user'">
                         <UserMessageRow :message="(msg as UserMessage)" :on-resend="onResend"
-                            :current-time="currentTime" @preview="handleOpenPreview" />
+                            :current-time="currentTime" @preview="(file) => emit('preview', file)" />
                     </template>
 
                     <template v-else-if="msg.messageType === 'system'">
@@ -18,22 +18,24 @@
                 </div>
             </div>
         </div>
-
-        <ImagePreviewer v-model="isPreviewOpen" :src="previewUrl" :mimeType="previewMimeType" />
     </main>
 </template>
 
 <script setup lang="ts">
 import { ref, watch, nextTick, onMounted, onUnmounted } from 'vue';
 import type { ClientMessage, UserMessage, SystemMessage } from '@/types/chat';
+import type { Attachment, UploadAttachment } from '@/types/file';
 
 import UserMessageRow from './UserMessageRow.vue';
 import SystemMessageRow from './SystemMessageRow.vue';
-import ImagePreviewer from '../ImagePreviewer.vue';
 
 const props = defineProps<{
     messages: ClientMessage[];
     onResend: (message: UserMessage) => void;
+}>();
+
+const emit = defineEmits<{
+    (e: 'preview', file: Attachment | UploadAttachment): void
 }>();
 
 const messageContainerRef = ref<HTMLElement | null>(null);
@@ -42,16 +44,6 @@ const lastMessageRef = ref<HTMLElement | null>(null);
 const isNearBottom = ref(true);
 const currentTime = ref(Date.now());
 let intervalId: number | undefined;
-
-const isPreviewOpen = ref(false);
-const previewUrl = ref('');
-const previewMimeType = ref('');
-
-const handleOpenPreview = (url: string, mimeType: string) => {
-    previewUrl.value = url;
-    previewMimeType.value = mimeType;
-    isPreviewOpen.value = true;
-};
 
 const scrollToNewMessage = () => {
     if (lastMessageRef.value) {
