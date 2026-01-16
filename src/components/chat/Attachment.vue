@@ -14,7 +14,13 @@
         <template v-else-if="isVideo">
             <div class="absolute inset-0 w-full h-full flex items-center justify-center cursor-pointer bg-zinc-900 z-10"
                 @click="emit('preview')">
-                <Play class="w-1/3 h-1/3 text-white/80 fill-white/20 transition-transform group-hover/card:scale-110" />
+
+                <img v-if="videoCoverUrl" :src="videoCoverUrl"
+                    class="absolute inset-0 w-full h-full object-cover opacity-60 group-hover/card:scale-105 transition-all duration-700"
+                    @load="handleResourceLoad" />
+
+                <Play
+                    class="relative w-1/3 h-1/3 text-white/80 fill-white/20 transition-transform group-hover/card:scale-110 z-20" />
             </div>
         </template>
 
@@ -76,6 +82,16 @@ const displayUrl = computed(() => {
         return props.file.previewUrl;
     }
     return (props.file as any).url || '';
+});
+
+const videoCoverUrl = computed(() => {
+    console.log(props.file);
+
+    if ('cover' in props.file) {
+        return props.file.cover;
+    }
+
+    return (props.file as any).videoCoverUrl || '';
 });
 
 const imageClass = computed(() => [

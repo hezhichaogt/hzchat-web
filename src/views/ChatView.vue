@@ -408,6 +408,7 @@ const handleSendMessage = (content: string, attachmentsToResend?: Attachment[]) 
       fileName: f.fileName,
       mimeType: f.mimeType,
       fileSize: f.fileSize,
+      meta: f.meta
     }));
 
   const trimmedContent = content.trim();
@@ -488,9 +489,34 @@ const updateFileInArray = (updatedFile: UploadAttachment) => {
   );
 };
 
+const processImage = async (file: File): Promise<{ processedFile: File }> => {
+  const options = {
+    maxSizeMB: 9,
+    maxWidthOrHeight: 1920,
+    initialQuality: 0.8,
+    fileType: 'image/webp' as const,
+    useWebWorker: true,
+  };
+
+  try {
+    const compressedBlob = await imageCompression(file, options);
+
+    if (compressedBlob.size < file.size) {
+      const newFileName = file.name.replace(/\.[^/.]+$/, "") + '.webp';
+      const processedFile = new File([compressedBlob], newFileName, { type: 'image/webp' });
+      return { processedFile };
+    }
+  } catch (error) {
+    console.warn('Image compression failed, using original file:', error);
+  }
+
+  return { processedFile: file };
+};
+
 const uploadFile = async (file: UploadAttachment): Promise<UploadAttachment> => {
   let currentFile = { ...file };
   let fileToUpload: File = file.originFile;
+  let meta: Record<string, any> = {};
 
   try {
     const isMarkdown = currentFile.fileName.toLowerCase().endsWith('.md');
@@ -500,22 +526,34 @@ const uploadFile = async (file: UploadAttachment): Promise<UploadAttachment> => 
     }
 
     if (compressibleImageTypes.includes(file.mimeType)) {
-      const options = {
-        maxSizeMB: 9,
-        maxWidthOrHeight: 1920,
-        initialQuality: 0.8,
-        fileType: 'image/webp',
-        useWebWorker: true,
-      };
+      const { processedFile } = await processImage(fileToUpload);
+      fileToUpload = processedFile;
+      currentFile.fileSize = fileToUpload.size;
+      currentFile.mimeType = fileToUpload.type;
+      currentFile.fileName = fileToUpload.name;
+    }
 
-      const compressedBlob = await imageCompression(file.originFile, options);
+    if (currentFile.mimeType.startsWith('video/')) {
+      try {
+        const { thumbFile: rawThumb, videoMeta } = await processVideoFile(fileToUpload);
+        const { processedFile: compressedThumb } = await processImage(rawThumb);
 
-      if (compressedBlob.size < file.fileSize) {
-        const newFileName = file.fileName.replace(/\.[^/.]+$/, "") + '.webp';
-        fileToUpload = new File([compressedBlob], newFileName, { type: 'image/webp' });
-        currentFile.fileSize = fileToUpload.size;
-        currentFile.mimeType = fileToUpload.type;
-        currentFile.fileName = newFileName;
+        currentFile.cover = URL.createObjectURL(compressedThumb);
+
+        const thumbUpload = await presignUpload(
+          compressedThumb.name,
+          compressedThumb.type,
+          compressedThumb.size
+        );
+
+        await putFile(thumbUpload.presignedUrl, compressedThumb);
+
+        meta = {
+          ...videoMeta,
+          thumbKey: thumbUpload.fileKey
+        };
+      } catch (videoError) {
+        console.warn('Video thumbnail generation failed (format likely unsupported):', videoError);
       }
     }
 
@@ -536,15 +574,48 @@ const uploadFile = async (file: UploadAttachment): Promise<UploadAttachment> => 
       status: 'uploaded' as const,
       fileKey: fileKey,
       fileName: fileName,
+      meta: Object.keys(meta).length > 0 ? meta : undefined,
     };
-  } catch (error) {
+  } catch (error: any) {
     console.error(error);
-    toast.error(`Couldn't upload this file.`);
+    toast.error(error.message || `Couldn't upload this file.`);
     return {
       ...currentFile,
       status: 'upload_failed' as const,
     };
   }
+};
+
+const processVideoFile = async (videoFile: File): Promise<{ thumbFile: File, videoMeta: any }> => {
+  return new Promise((resolve, reject) => {
+    const video = document.createElement('video');
+    video.src = URL.createObjectURL(videoFile);
+    video.preload = 'metadata';
+    video.muted = true;
+
+    video.onloadedmetadata = () => {
+      const videoMeta = { width: video.videoWidth, height: video.videoHeight, duration: video.duration };
+      video.currentTime = 0.5;
+
+      video.onseeked = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        canvas.getContext('2d')?.drawImage(video, 0, 0);
+
+        canvas.toBlob((blob) => {
+          if (blob) {
+            const thumbFile = new File([blob], `temp_thumb_${Date.now()}.jpg`, { type: 'image/jpeg' });
+            resolve({ thumbFile, videoMeta });
+          } else {
+            reject('Thumbnail blob creation failed');
+          }
+          URL.revokeObjectURL(video.src);
+        }, 'image/jpeg', 0.8);
+      };
+    };
+    video.onerror = () => reject('Video processing error');
+  });
 };
 
 const handleUploadStart = (newFiles: UploadAttachment[]) => {
@@ -567,9 +638,8 @@ const handleFileRemoved = (fileId: string) => {
   const index = filesToUpload.value.findIndex(f => f.id === fileId);
   if (index !== -1) {
     const file = filesToUpload.value[index];
-    if (file?.previewUrl) {
-      URL.revokeObjectURL(file.previewUrl);
-    }
+    if (file?.previewUrl) URL.revokeObjectURL(file.previewUrl);
+    if (file?.cover) URL.revokeObjectURL(file.cover);
     filesToUpload.value.splice(index, 1);
   }
 };

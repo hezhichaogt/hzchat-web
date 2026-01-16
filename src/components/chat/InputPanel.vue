@@ -11,7 +11,7 @@
                 <div v-if="files.length > 0" class="px-4 pt-4">
                     <div class="flex flex-wrap gap-3 pb-3 mb-1 border-b border-zinc-200/50 dark:border-zinc-800/50">
                         <div v-for="file in files" :key="file.id" class="w-16 h-16 shrink-0">
-                            <Attachment :file="file" @remove="removeFile(file.id, file.previewUrl)"
+                            <Attachment :file="file" @remove="removeFile(file.id, file)"
                                 @preview="handlePreview(file)" />
                         </div>
                     </div>
@@ -187,8 +187,9 @@ const handleFileChange = (event: Event) => {
     target.value = '';
 };
 
-const removeFile = (fileId: string, previewUrl: string) => {
-    if (previewUrl) URL.revokeObjectURL(previewUrl);
+const removeFile = (fileId: string, file: UploadAttachment) => {
+    if (file.previewUrl) URL.revokeObjectURL(file.previewUrl);
+    if (file.cover) URL.revokeObjectURL(file.cover);
     emit('file-removed', fileId);
 };
 

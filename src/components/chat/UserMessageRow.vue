@@ -95,22 +95,29 @@ const emit = defineEmits<{
 const roomStore = useRoomStore();
 const VITE_API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
-interface DisplayAttachment extends Attachment {
-    url: string;
-}
-
 const isAttachments = computed(() =>
     !!props.message.attachments && props.message.attachments.length > 0
 );
 
-const displayAttachments = computed<DisplayAttachment[]>(() => {
+const displayAttachments = computed<Attachment[]>(() => {
     const currentToken = roomStore.roomToken;
     if (!isAttachments.value || !currentToken) return [];
 
-    const mapped = props.message.attachments!.map(a => ({
-        ...a,
-        url: `${VITE_API_BASE_URL}/file/presign-download?k=${encodeURIComponent(a.fileKey)}&n=${encodeURIComponent(a.fileName)}&t=${encodeURIComponent(currentToken)}`
-    }));
+    const mapped = props.message.attachments!.map(a => {
+        const baseUrl = `${VITE_API_BASE_URL}/file/presign-download`;
+        const mainUrl = `${baseUrl}?k=${encodeURIComponent(a.fileKey)}&n=${encodeURIComponent(a.fileName)}&t=${encodeURIComponent(currentToken)}`;
+
+        let videoCoverUrl = '';
+        if (a.mimeType.startsWith('video/') && a.meta?.thumbKey) {
+            videoCoverUrl = `${baseUrl}?k=${encodeURIComponent(a.meta.thumbKey)}&n=thumb.jpg&t=${encodeURIComponent(currentToken)}`;
+        }
+
+        return {
+            ...a,
+            url: mainUrl,
+            videoCoverUrl: videoCoverUrl
+        };
+    });
 
     return mapped.sort((a, b) => {
         const aIsImage = a.mimeType.startsWith('image/') ? 1 : 0;

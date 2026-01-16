@@ -29,10 +29,31 @@
                         }" @click.stop alt="Preview" />
 
                     <div v-else-if="isVideo" class="relative w-full max-w-5xl max-h-[85vh] aspect-video" @click.stop>
-                        <video :src="displayUrl" controls autoplay
-                            class="w-full h-full rounded-xl shadow-2xl object-contain bg-black/40">
+                        <video v-show="!hasVideoError" :src="displayUrl" controls autoplay
+                            class="w-full h-full rounded-xl shadow-2xl object-contain bg-black/40"
+                            @error="handleVideoError">
                             Your browser does not support the video tag.
                         </video>
+
+                        <div v-if="hasVideoError"
+                            class="w-full h-full flex flex-col items-center justify-center bg-zinc-900/50 rounded-xl border border-white/10 backdrop-blur-sm p-8 text-center">
+
+                            <div class="w-20 h-20 rounded-full bg-zinc-800 flex items-center justify-center mb-6">
+                                <VideoOff class="w-10 h-10 text-zinc-500" />
+                            </div>
+
+                            <h3 class="text-xl font-bold text-white mb-2">Video preview unavailable</h3>
+                            <p class="text-zinc-400 text-sm max-w-md mb-8">
+                                This video can't be previewed in your browser.
+                                Download it to watch with a media player on your device.
+                            </p>
+
+                            <button v-if="file.url" @click="handleDownload"
+                                class="px-8 py-3 bg-white text-zinc-900 rounded-full font-bold hover:bg-zinc-200 transition-colors flex items-center gap-2">
+                                <Download class="w-4 h-4" />
+                                Download Video
+                            </button>
+                        </div>
                     </div>
 
                     <div v-else
@@ -59,8 +80,8 @@
 </template>
 
 <script setup lang="ts">
-import { computed, watch } from 'vue';
-import { X, FileText } from 'lucide-vue-next';
+import { computed, watch, ref } from 'vue';
+import { X, FileText, VideoOff, Download } from 'lucide-vue-next';
 import type { Attachment, UploadAttachment } from '@/types/file';
 
 const props = defineProps<{
@@ -69,6 +90,17 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits(['update:modelValue', 'download']);
+
+const hasVideoError = ref(false);
+
+watch(() => props.file, () => {
+    hasVideoError.value = false;
+});
+
+const handleVideoError = (e: Event) => {
+    console.error('Video load error:', e);
+    hasVideoError.value = true;
+};
 
 const displayUrl = computed(() => {
     if (!props.file) return '';
@@ -82,7 +114,6 @@ const isImage = computed(() => props.file?.mimeType.startsWith('image/'));
 const isVideo = computed(() => props.file?.mimeType.startsWith('video/'));
 
 const close = () => emit('update:modelValue', false);
-const handleDownload = () => emit('download', props.file);
 
 watch(() => props.modelValue, (isOpen) => {
     if (isOpen) {
@@ -96,6 +127,19 @@ watch(() => props.modelValue, (isOpen) => {
 
 const handleKeyDown = (e: KeyboardEvent) => {
     if (e.key === 'Escape') close();
+};
+
+const handleDownload = () => {
+    const downloadUrl = (props.file as any).url || '';
+    if (!downloadUrl) return;
+
+    const link = document.createElement('a');
+    link.href = downloadUrl;
+    link.download = props.file?.fileName || '';
+    link.target = '_blank';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
 };
 </script>
 

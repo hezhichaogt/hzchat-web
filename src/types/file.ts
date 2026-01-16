@@ -4,6 +4,7 @@ export interface Attachment {
   mimeType: string
   fileSize: number
   meta?: Record<string, any>
+  url?: string | null
   status?:
     | 'downloading'
     | 'downloaded'
@@ -19,4 +20,5 @@ export interface UploadAttachment extends Attachment {
   previewUrl: string
   originFile: File
   status: 'pending' | 'uploading' | 'uploaded' | 'upload_failed'
+  cover?: string
 }
