@@ -513,7 +513,7 @@ const processImage = async (file: File): Promise<{ processedFile: File }> => {
   return { processedFile: file };
 };
 
-const uploadFile = async (file: UploadAttachment): Promise<UploadAttachment> => {
+const uploadFile = async (file: UploadAttachment, onUploadProgress?: (percent: number) => void): Promise<UploadAttachment> => {
   let currentFile = { ...file };
   let fileToUpload: File = file.originFile;
   let meta: Record<string, any> = {};
@@ -557,6 +557,15 @@ const uploadFile = async (file: UploadAttachment): Promise<UploadAttachment> => 
       }
     }
 
+    if (currentFile.mimeType.startsWith('audio/')) {
+      try {
+        const { duration } = await processAudioFile(fileToUpload);
+        meta = { duration };
+      } catch (audioError) {
+        console.warn('Audio metadata extraction failed:', audioError);
+      }
+    }
+
     if (fileToUpload.size > MAX_FILE_SIZE_BYTES) {
       throw new Error('File too large (max 10 MB).');
     }
@@ -567,7 +576,9 @@ const uploadFile = async (file: UploadAttachment): Promise<UploadAttachment> => 
       currentFile.fileSize
     );
 
-    await putFile(presignedUrl, fileToUpload);
+    await putFile(presignedUrl, fileToUpload, (percent) => {
+      if (onUploadProgress) onUploadProgress(percent);
+    });
 
     return {
       ...currentFile,
@@ -575,6 +586,7 @@ const uploadFile = async (file: UploadAttachment): Promise<UploadAttachment> => 
       fileKey: fileKey,
       fileName: fileName,
       meta: Object.keys(meta).length > 0 ? meta : undefined,
+      progress: 100,
     };
   } catch (error: any) {
     console.error(error);
@@ -618,6 +630,30 @@ const processVideoFile = async (videoFile: File): Promise<{ thumbFile: File, vid
   });
 };
 
+const processAudioFile = async (file: File): Promise<{ duration: number }> => {
+  return new Promise((resolve, reject) => {
+    const audio = new Audio();
+    const url = URL.createObjectURL(file);
+    audio.src = url;
+
+    audio.onloadedmetadata = () => {
+      const duration = audio.duration;
+      URL.revokeObjectURL(url);
+      resolve({ duration });
+    };
+
+    audio.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error('Audio format not supported by browser'));
+    };
+
+    setTimeout(() => {
+      URL.revokeObjectURL(url);
+      reject(new Error('Audio metadata timeout'));
+    }, 2000);
+  });
+};
+
 const handleUploadStart = (newFiles: UploadAttachment[]) => {
   if (filesToUpload.value.length + newFiles.length > MAX_FILE_COUNT) {
     toast.warning(`You can upload up to ${MAX_FILE_COUNT} files.`);
@@ -628,8 +664,10 @@ const handleUploadStart = (newFiles: UploadAttachment[]) => {
   filesToUpload.value.push(...newFiles);
 
   newFiles.forEach(async (file) => {
-    updateFileInArray({ ...file, status: 'uploading' as const });
-    const updatedFile = await uploadFile(file);
+    updateFileInArray({ ...file, status: 'uploading' as const, progress: 0 });
+    const updatedFile = await uploadFile(file, (percent) => {
+      updateFileInArray({ ...file, status: 'uploading' as const, progress: percent });
+    });
     updateFileInArray(updatedFile);
   });
 };

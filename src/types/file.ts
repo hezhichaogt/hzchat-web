@@ -21,4 +21,5 @@ export interface UploadAttachment extends Attachment {
   originFile: File
   status: 'pending' | 'uploading' | 'uploaded' | 'upload_failed'
   cover?: string
+  progress?: number
 }
