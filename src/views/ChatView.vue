@@ -55,8 +55,6 @@
       <Header :code="chatCode" :connectStatus="connectStatus" :users="onlineUsers" :max-users="maxUsers"
         @leave="handleLeaveChat" />
 
-      <ThemeToggle />
-
       <Messages class="bg-transparent" :messages="messages" :on-resend="handleResendMessage"
         @preview="openMediaViewer" />
 
