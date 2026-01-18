@@ -1,7 +1,3 @@
-//
-// Vue Router configuration module.
-//
-
 import { createRouter, createWebHistory } from 'vue-router'
 import type { RouteRecordRaw } from 'vue-router'
 import { useUserStore } from '@/stores/user'
@@ -17,6 +13,7 @@ const AboutView = () => import('@/views/AboutView.vue')
 const AuthView = () => import('@/views/AuthView.vue')
 const SettingsView = () => import('@/views/SettingsView.vue')
 const ResetPasswordView = () => import('@/views/ResetPasswordView.vue')
+const PricingView = () => import('@/views/PricingView.vue')
 
 const routes: Array<RouteRecordRaw> = [
   {
@@ -55,6 +52,12 @@ const routes: Array<RouteRecordRaw> = [
         component: SettingsView,
         meta: { requiresAuth: true },
       },
+      {
+        path: '/pricing',
+        name: 'Pricing',
+        component: PricingView,
+        meta: { hideHeaderBorder: true, layoutWidth: 'max-w-5xl' },
+      },
     ],
   },
   {
@@ -81,6 +84,13 @@ const routes: Array<RouteRecordRaw> = [
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes,
+  scrollBehavior(to, from, savedPosition) {
+    if (savedPosition) {
+      return savedPosition
+    } else {
+      return { top: 0, behavior: 'smooth' }
+    }
+  },
 })
 
 router.beforeEach((to, from, next) => {

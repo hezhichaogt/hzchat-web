@@ -7,7 +7,7 @@
 
     <div :class="cn(
       'flex h-14 items-center justify-between',
-      maxWidth,
+      route.meta.layoutWidth ? route.meta.layoutWidth : 'max-w-2xl',
       'w-full'
     )">
       <Logo />
@@ -25,12 +25,4 @@ import { cn } from '@/lib/utils'
 import Logo from './Logo.vue';
 
 const route = useRoute()
-
-interface Props {
-  maxWidth?: string
-}
-
-const props = withDefaults(defineProps<Props>(), {
-  maxWidth: 'max-w-2xl'
-})
 </script>

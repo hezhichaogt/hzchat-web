@@ -41,6 +41,12 @@ export const useUserStore = defineStore('user', () => {
     }
   })
 
+  const userType = computed(() => profile.value.userType)
+
+  const isPro = computed(() => userType.value === 'pro')
+  const isMember = computed(() => userType.value === 'member')
+  const isGuest = computed(() => userType.value === 'guest')
+
   function handleLoginSuccess(token: string, userInfo: UserProfile) {
     identityToken.value = token
     userProfile.value = { ...userInfo }
@@ -90,6 +96,10 @@ export const useUserStore = defineStore('user', () => {
   return {
     isLoggedIn,
     profile,
+    userType,
+    isPro,
+    isMember,
+    isGuest,
     identityToken,
     handleLoginSuccess,
     logout,
