@@ -30,17 +30,6 @@
             {{ userStore.profile.id }}
           </span>
         </div>
-
-        <button @click="handleResetIdentity"
-          class="flex items-center gap-1.5 px-2 py-1.5 rounded-lg transition-all duration-300 active:scale-95 group/btn"
-          title="Generate New ID">
-          <Dice5
-            class="size-3.5 text-foreground/50 group-hover/btn:text-primary transition-transform duration-500 ease-in-out group-hover/btn:rotate-180" />
-          <span
-            class="text-[10px] font-black uppercase tracking-[0.15em] text-foreground/50 group-hover/btn:text-foreground/90 transition-colors">
-            New ID
-          </span>
-        </button>
       </div>
     </section>
 
@@ -113,7 +102,6 @@ import {
   Loader2,
   ChevronRight,
   Fingerprint,
-  Dice5,
   Plus
 } from 'lucide-vue-next';
 
@@ -135,14 +123,6 @@ const userStore = useUserStore();
 const isBusy = ref(false);
 const chatCodeInput = ref('');
 
-const handleResetIdentity = () => {
-  try {
-    userStore.refreshIdentity()
-  } catch (error) {
-    toast.error('Could not generate a new ID')
-  }
-}
-
 const handleCreateChat = async () => {
   if (isBusy.value) return;
   isBusy.value = true;
@@ -152,7 +132,7 @@ const handleCreateChat = async () => {
     router.push(`/chat/${chatCode}`);
   } catch (error: any) {
     console.error(error.message)
-    toast.error('Could not create the chat. Please try again.')
+    toast.error(error.message || 'Could not create the chat. Please try again.')
   } finally {
     isBusy.value = false;
   }

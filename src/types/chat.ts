@@ -54,6 +54,10 @@ export interface AttachmentsPayload {
   attachments: Attachment[]
 }
 
+export interface RoomExpiringPayload {
+  reason: string
+}
+
 export interface UserEventPayload {
   user: UserBase
 }
@@ -64,6 +68,7 @@ export interface ErrorPayload {
 }
 
 export interface InitDataPayload {
+  creatorId: string
   currentUser: UserProfile
   onlineUsers: UserBase[]
   maxUsers: number
@@ -90,6 +95,7 @@ export type MessageType =
   | 'ERROR'
   | 'TOKEN_UPDATE'
   | 'ATTACHMENTS'
+  | 'ROOM_EXPIRING'
 
 export interface ServerMessage {
   id: string
@@ -106,6 +112,7 @@ export interface ServerMessage {
     | MessageConfirmPayload
     | TokenUpdatePayload
     | AttachmentsPayload
+    | RoomExpiringPayload
 }
 
 export type OutboundMessageType = 'TEXT' | 'ATTACHMENTS'

@@ -53,14 +53,15 @@
     <div v-else class="flex-1 w-full max-w-3xl mx-auto flex flex-col min-h-0 relative border-x border-border/40">
 
       <Header :code="chatCode" :connectStatus="connectStatus" :users="onlineUsers" :max-users="maxUsers"
-        @leave="handleLeaveChat" />
+        :is-creator="isCreator" @leave="handleLeaveChat" @terminate="handleTerminateChat" />
 
-      <Messages class="bg-transparent" :messages="messages" :on-resend="handleResendMessage"
-        @preview="openMediaViewer" />
+      <Messages class="bg-transparent" :messages="messages" :on-resend="handleResendMessage" @preview="openMediaViewer"
+        :notifications="notifications" :on-remove-notification="removeNotification"
+        @room-expired="closeConnectionByUser" />
 
-      <InputPanel :connectStatus="connectStatus" :files="filesToUpload" :maxFiles="MAX_FILE_COUNT"
-        @send="handleSendMessage" @upload-start="handleUploadStart" @file-removed="handleFileRemoved"
-        @preview="openMediaViewer" />
+      <InputPanel :connectStatus="connectStatus" :files="filesToUpload" :maxFiles="currentLimits.maxFiles"
+        :maxSizeBytes="currentLimits.maxSizeBytes" @send="handleSendMessage" @upload-start="handleUploadStart"
+        @file-removed="handleFileRemoved" @preview="openMediaViewer" />
 
       <MediaViewer v-model="isViewerOpen" :file="activeFile" />
 
@@ -77,15 +78,15 @@ import Header from '@/components/chat/Header.vue';
 import Messages from '@/components/chat/Messages.vue';
 import InputPanel from '@/components/chat/InputPanel.vue';
 import MediaViewer from '@/components/chat/MediaViewer.vue';
-import ThemeToggle from '@/components/ThemeToggle.vue';
 import { Button } from '@/components/ui/button';
 import { AlertCircle, Zap } from 'lucide-vue-next';
 import { toast } from 'vue-sonner';
 
+import { useUserStore } from '@/stores/user'
 import { useRoomStore } from '@/stores/room';
 import { useWebSocketReconnector } from '@/hooks/useWebSocketReconnector';
 
-import { joinChat } from '@/services/chat';
+import { joinChat, terminateChat } from '@/services/chat';
 import { presignUpload } from '@/services/file';
 import { putFile } from '@/utils/fileUpload';
 import { generateTempID } from '@/utils/idGenerator';
@@ -106,19 +107,64 @@ import type {
   MessageConfirmPayload,
   TextPayload,
   OutboundMessage,
-  AttachmentsPayload
+  AttachmentsPayload,
 } from '@/types/chat';
 
 
 const route = useRoute();
 const router = useRouter();
+const userStore = useUserStore()
 const roomStore = useRoomStore();
 
+const creatorId = ref<string | null>(null);
 const chatCode = ref<string | null>(null);
 const maxUsers = ref<number>(0);
 const currentUser = ref<UserProfile | null>(null);
 const onlineUsers = ref<UserBase[]>([]);
 const messages = ref<ClientMessage[]>([]);
+const isCreator = computed(() => creatorId.value === currentUser.value?.id);
+
+const notifications = ref<ServerMessage[]>([]);
+const removeNotification = (id: string) => {
+  notifications.value = notifications.value.filter(n => n.id !== id);
+};
+let expiringTimer: ReturnType<typeof setTimeout> | null = null;
+
+const currentLimits = computed(() => {
+  if (userStore.isGuest) {
+    return {
+      maxFiles: 1,
+      maxSizeBytes: 2 * 1024 * 1024,
+      compression: {
+        maxSizeMB: 1.8,
+        maxWidthOrHeight: 1280,
+        initialQuality: 0.75
+      }
+    }
+  }
+
+  if (userStore.isMember) {
+    return {
+      maxFiles: 1,
+      maxSizeBytes: 10 * 1024 * 1024,
+      compression: {
+        maxSizeMB: 9,
+        maxWidthOrHeight: 1920,
+        initialQuality: 0.8
+      }
+    }
+  }
+
+  return {
+    maxFiles: 5,
+    maxSizeBytes: 100 * 1024 * 1024,
+    compression: {
+      maxSizeMB: 90,
+      maxWidthOrHeight: 3840,
+      initialQuality: 0.9
+    }
+  }
+})
 
 const ACK_TIMEOUT_MS = 5000;
 const ackTimers = new Map<string, number>();
@@ -303,6 +349,23 @@ const handleAttachmentMessage = (message: ServerMessage) => {
   } as UserMessage);
 };
 
+const handleRoomExpiringMessage = (message: ServerMessage) => {
+  notifications.value.push(message)
+
+  if (expiringTimer) {
+    clearTimeout(expiringTimer);
+  }
+
+  const ttl = 60 * 1000;
+  const expiresAt = message.timestamp + ttl;
+  const delay = Math.max(0, expiresAt - Date.now());
+
+  expiringTimer = setTimeout(() => {
+    closeConnectionByUser();
+    expiringTimer = null;
+  }, delay);
+}
+
 const handleWsConnected = () => {
   if (!hasSystemMessageShown.value) {
     console.log('Chat is ready.');
@@ -332,7 +395,8 @@ const handleWSMessage = (event: MessageEvent) => {
       break;
     }
     case 'INIT_DATA': {
-      const { currentUser: user, onlineUsers: others, maxUsers: max } = serverMsg.payload as InitDataPayload;
+      const { creatorId: creator, currentUser: user, onlineUsers: others, maxUsers: max } = serverMsg.payload as InitDataPayload;
+      creatorId.value = creator;
       currentUser.value = user;
       onlineUsers.value = others;
       maxUsers.value = max;
@@ -353,6 +417,9 @@ const handleWSMessage = (event: MessageEvent) => {
       break;
     case 'ATTACHMENTS':
       handleAttachmentMessage(serverMsg);
+      break;
+    case 'ROOM_EXPIRING':
+      handleRoomExpiringMessage(serverMsg);
       break;
     default:
       console.warn(`Received unknown message type: ${serverMsg.type}`, serverMsg);
@@ -475,9 +542,6 @@ const handleResendMessage = (failedMessage: UserMessage) => {
 };
 
 
-// File Uploading
-const MAX_FILE_COUNT = 3;
-const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024;
 const compressibleImageTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/avif'];
 const filesToUpload = ref<UploadAttachment[]>([]);
 
@@ -489,9 +553,7 @@ const updateFileInArray = (updatedFile: UploadAttachment) => {
 
 const processImage = async (file: File): Promise<{ processedFile: File }> => {
   const options = {
-    maxSizeMB: 9,
-    maxWidthOrHeight: 1920,
-    initialQuality: 0.8,
+    ...currentLimits.value.compression,
     fileType: 'image/webp' as const,
     useWebWorker: true,
   };
@@ -564,8 +626,10 @@ const uploadFile = async (file: UploadAttachment, onUploadProgress?: (percent: n
       }
     }
 
-    if (fileToUpload.size > MAX_FILE_SIZE_BYTES) {
-      throw new Error('File too large (max 10 MB).');
+    const limit = currentLimits.value.maxSizeBytes;
+    const limitMB = limit / (1024 * 1024);
+    if (fileToUpload.size > limit) {
+      throw new Error(`File too large (max ${limitMB} MB).`);
     }
 
     const { presignedUrl, fileKey, fileName } = await presignUpload(
@@ -653,8 +717,9 @@ const processAudioFile = async (file: File): Promise<{ duration: number }> => {
 };
 
 const handleUploadStart = (newFiles: UploadAttachment[]) => {
-  if (filesToUpload.value.length + newFiles.length > MAX_FILE_COUNT) {
-    toast.warning(`You can upload up to ${MAX_FILE_COUNT} files.`);
+  const maxFiles = currentLimits.value.maxFiles;
+  if (filesToUpload.value.length + newFiles.length > maxFiles) {
+    toast.warning(`You can upload up to ${maxFiles} files.`);
     newFiles.forEach(f => URL.revokeObjectURL(f.previewUrl));
     return;
   }
@@ -698,6 +763,19 @@ const handleLeaveChat = () => {
   roomStore.clearRoomContext();
   router.replace({ name: 'Home' });
 };
+
+const handleTerminateChat = async () => {
+  try {
+    await terminateChat(chatCode.value!);
+    handleLeaveChat();
+  } catch (error: any) {
+    console.error('Failed to terminate chat:', error);
+    toast.error(
+      error.message || 'Unable to end the chat. Please try again.'
+    );
+
+  }
+}
 
 const handleRetry = () => {
   window.location.reload();

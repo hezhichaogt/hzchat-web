@@ -34,7 +34,7 @@ export const useUserStore = defineStore('user', () => {
       nickname: defaultNickname,
       avatar: '',
       userType: 'guest',
-      planType: 'FREE',
+      planType: 'free',
       planExpiresAt: null,
       lastLoginAt: null,
       email: '',

@@ -7,6 +7,7 @@ const INITIAL_DELAY_MS = 2000
 const MAX_DELAY_MS = 60 * 1000
 const BACKOFF_FACTOR = 2
 const WS_CLOSE_CODE_SESSION_KICKED = 4001
+const WS_CLOSE_CODE_ROOM_EXPIRING = 4002
 
 interface WebSocketOptions {
   wsUrl: Ref<string | null>
@@ -82,6 +83,12 @@ export function useWebSocketReconnector({ wsUrl, onMessage, onConnected }: WebSo
 
     if (event.code === WS_CLOSE_CODE_SESSION_KICKED) {
       toast.error("You've signed in elsewhere.")
+      connectStatus.value = 'FINAL_DISCONNECT'
+      return
+    }
+
+    if (event.code === WS_CLOSE_CODE_ROOM_EXPIRING) {
+      toast.warning('This chat is closing and is no longer available.')
       connectStatus.value = 'FINAL_DISCONNECT'
       return
     }

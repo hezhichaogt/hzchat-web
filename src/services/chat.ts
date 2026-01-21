@@ -11,7 +11,16 @@ interface CreateChatResponse {
 
 export async function createChat(): Promise<CreateChatResponse> {
   const url = '/chat/create'
-  return await post<CreateChatResponse>(url)
+  const userStore = useUserStore()
+  const { profile } = userStore
+
+  const data: any = {}
+
+  if (profile.userType === 'guest') {
+    data.guestId = profile.id
+  }
+
+  return await post<CreateChatResponse>(url, data)
 }
 
 interface JoinChatResponse {
@@ -30,4 +39,11 @@ export async function joinChat(code: string): Promise<JoinChatResponse> {
   }
 
   return await post<JoinChatResponse>(url, data)
+}
+
+export async function terminateChat(code: string): Promise<void> {
+  const url = '/chat/terminate'
+  const data = { code }
+
+  return await post<void>(url, data)
 }

@@ -182,13 +182,8 @@ const handleDownload = () => {
     const downloadUrl = (props.file as any).url || '';
     if (!downloadUrl) return;
 
-    const link = document.createElement('a');
-    link.href = downloadUrl;
-    link.download = props.file.fileName;
-    link.target = '_blank';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    const targetUrl = `${downloadUrl}${downloadUrl.includes('?') ? '&' : '?'}t=${Date.now()}`;
+    window.location.assign(targetUrl);
 };
 
 const progress = computed(() => {

@@ -103,7 +103,7 @@
 
             <div class="w-px h-4 bg-border/50 mx-1"></div>
 
-            <AlertDialog>
+            <AlertDialog @update:open="resetTerminateStatus">
                 <AlertDialogTrigger as-child>
                     <Button variant="ghost" size="sm" class="h-9 px-3 text-destructive rounded transition-all active:scale-95 gap-1.5 group
                    hover:bg-destructive hover:text-white dark:hover:bg-red-600 dark:hover:text-white">
@@ -112,21 +112,56 @@
                     </Button>
                 </AlertDialogTrigger>
 
-                <AlertDialogContent class="max-w-80 rounded-2xl border-border bg-background shadow-2xl">
+                <AlertDialogContent class="max-w-96 rounded-2xl border-border bg-background shadow-2xl">
                     <AlertDialogHeader>
-                        <AlertDialogTitle class="text-foreground">Leave chat?</AlertDialogTitle>
-                        <AlertDialogDescription class="text-muted-foreground/90">
-                            You'll be disconnected, but you can rejoin later using the chat code.
+                        <AlertDialogTitle class="text-foreground text-xl">Leave this chat?</AlertDialogTitle>
+                        <AlertDialogDescription class="text-muted-foreground/90 text-sm leading-relaxed">
+                            <template v-if="isCreator">
+                                You're the creator of this chat.
+                                If you leave now, the chat will stay open and others can continue chatting.
+                            </template>
+                            <template v-else>
+                                You'll leave the chat and disconnect from the room.
+                                You can rejoin later using the chat code:
+                                <span class="font-mono font-bold text-foreground">{{ props.code }}</span>.
+                            </template>
+                            <div v-if="isCreator" class="mt-4 pt-4 border-t border-border/40">
+                                <label
+                                    class="flex items-center gap-3 p-3 rounded-xl border border-transparent bg-muted/30 hover:bg-muted/50 cursor-pointer transition-all group">
+                                    <div class="relative flex items-center justify-center">
+                                        <input type="checkbox" :checked="isTerminating"
+                                            @change="isTerminating = ($event.target as HTMLInputElement).checked"
+                                            class="peer appearance-none w-5 h-5 rounded-md border-2 border-muted-foreground/30 checked:bg-red-600 checked:border-red-600 transition-all cursor-pointer" />
+                                        <svg class="absolute w-3.5 h-3.5 text-white opacity-0 peer-checked:opacity-100 transition-opacity pointer-events-none"
+                                            xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                                            stroke="currentColor" stroke-width="4" stroke-linecap="round"
+                                            stroke-linejoin="round">
+                                            <polyline points="20 6 9 17 4 12"></polyline>
+                                        </svg>
+                                    </div>
+                                    <div class="flex flex-col">
+                                        <span
+                                            class="text-xs font-bold text-foreground group-hover:text-red-500 transition-colors select-none">
+                                            End this chat for everyone
+                                        </span>
+                                        <span class="text-[10px] text-muted-foreground select-none">Everyone will be
+                                            notified. The chat will close
+                                            in 1 minute.</span>
+                                    </div>
+                                </label>
+                            </div>
                         </AlertDialogDescription>
                     </AlertDialogHeader>
-                    <AlertDialogFooter class="gap-2 sm:gap-4">
+
+                    <AlertDialogFooter class="flex flex-col sm:flex-row gap-2 mt-4 w-full">
                         <AlertDialogCancel
-                            class="rounded-xl font-medium border-border hover:bg-muted bg-transparent text-foreground">
-                            Cancel
+                            class="border-none hover:bg-muted order-2 sm:order-1 font-medium rounded-2xl">
+                            Stay here
                         </AlertDialogCancel>
-                        <AlertDialogAction @click="$emit('leave')" class="bg-destructive text-white rounded-xl font-bold border-none shadow-md transition-all duration-200
-                            hover:bg-red-500 hover:shadow-lg hover:shadow-red-500/20 active:scale-95">
-                            Leave Chat
+
+                        <AlertDialogAction @click="$emit(LeaveChatButtonConfig.emit)"
+                            :class="['rounded-2xl px-8 font-bold transition-all duration-300 order-1 sm:order-2', LeaveChatButtonConfig.class]">
+                            {{ LeaveChatButtonConfig.text }}
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
@@ -220,15 +255,41 @@ const props = defineProps<{
     connectStatus: ConnectionStatus;
     users: UserBase[];
     maxUsers: number;
+    isCreator: boolean;
 }>();
 
-const emit = defineEmits(['leave']);
+const emit = defineEmits(['leave', 'terminate']);
 
+type LeaveAction = 'leave' | 'terminate';
 
 const showQrModal = ref(false);
+const isTerminating = ref(false);
 const BASE_URL = import.meta.env.VITE_BASE_URL || window.location.origin;
 
 const fullUrl = computed(() => `${BASE_URL}/chat/${props.code}`);
+
+const LeaveChatButtonConfig = computed<{ text: string, class: string, emit: LeaveAction }>(() => {
+    if (isTerminating.value) {
+        return {
+            text: 'End Chat',
+            class: 'bg-red-600 hover:bg-red-700 text-white shadow-red-500/20',
+            emit: 'terminate'
+        };
+    }
+    return {
+        text: 'Leave Chat',
+        class: 'bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900',
+        emit: 'leave'
+    };
+});
+
+const resetTerminateStatus = (open: boolean) => {
+    if (!open) {
+        setTimeout(() => {
+            isTerminating.value = false;
+        }, 200);
+    }
+};
 
 const statusColorClass = computed(() => {
     switch (props.connectStatus) {

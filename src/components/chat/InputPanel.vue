@@ -33,9 +33,10 @@
                             title="Add attachment">
                             <Paperclip class="w-5 h-5" />
                         </button>
+
                         <input type="file" ref="fileInputRef" class="hidden"
                             accept="image/*,video/*,audio/*,application/pdf,text/plain,text/markdown,application/octet-stream"
-                            multiple @change="handleFileChange" />
+                            :multiple="maxFiles > 1" @change="handleFileChange" />
 
                         <Popover v-model:open="isEmojiOpen">
                             <PopoverTrigger as-child>
@@ -92,6 +93,7 @@ const props = defineProps<{
     connectStatus: ConnectionStatus,
     files: UploadAttachment[],
     maxFiles: number,
+    maxSizeBytes: number
 }>()
 
 const emit = defineEmits(['send', 'upload-start', 'file-removed', 'preview'])
@@ -153,7 +155,13 @@ const handleFileChange = (event: Event) => {
 
     const filesToEmit: UploadAttachment[] = [];
 
-    newFilesArray.forEach(file => {
+    for (const file of newFilesArray) {
+        if (file.size > props.maxSizeBytes) {
+            const limitMB = Math.floor(props.maxSizeBytes / (1024 * 1024));
+            toast.error(`${file.name} too large (max ${limitMB} MB).`);
+            continue;
+        }
+
         const ext = `.${file.name.split('.').pop()?.toLowerCase()}`;
         let finalMimeType = file.type;
 
@@ -179,11 +187,12 @@ const handleFileChange = (event: Event) => {
             mimeType: finalMimeType,
             fileSize: file.size,
         });
-    });
+    }
 
     if (filesToEmit.length > 0) {
         emit('upload-start', filesToEmit);
     }
+
     target.value = '';
 };
 

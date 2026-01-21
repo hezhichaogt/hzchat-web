@@ -3,6 +3,11 @@
         class="flex-1 min-h-0 relative bg-zinc-50 dark:bg-zinc-950 overflow-y-auto custom-scrollbar"
         @scroll="handleScroll">
 
+        <Transition name="slide-down" mode="out-in">
+            <NotificationBar v-if="notifications.length > 0" :notifications="notifications"
+                @close="onRemoveNotification" @room-expired="emit('room-expired')" />
+        </Transition>
+
         <div ref="messagesWrapperRef" class="max-w-5xl mx-auto py-4 px-4 md:px-6">
             <div class="space-y-8">
                 <div v-for="(msg, index) in messages" :key="msg.id || msg.tempId"
@@ -23,19 +28,23 @@
 
 <script setup lang="ts">
 import { ref, watch, nextTick, onMounted, onUnmounted } from 'vue';
-import type { ClientMessage, UserMessage, SystemMessage } from '@/types/chat';
+import type { ClientMessage, UserMessage, SystemMessage, ServerMessage } from '@/types/chat';
 import type { Attachment, UploadAttachment } from '@/types/file';
 
+import NotificationBar from './NotificationBar.vue';
 import UserMessageRow from './UserMessageRow.vue';
 import SystemMessageRow from './SystemMessageRow.vue';
 
 const props = defineProps<{
     messages: ClientMessage[];
     onResend: (message: UserMessage) => void;
+    notifications: ServerMessage[];
+    onRemoveNotification: (id: string) => void;
 }>();
 
 const emit = defineEmits<{
     (e: 'preview', file: Attachment | UploadAttachment): void
+    (e: 'room-expired'): void
 }>();
 
 const messageContainerRef = ref<HTMLElement | null>(null);

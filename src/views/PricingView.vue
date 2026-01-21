@@ -188,7 +188,7 @@ const guestFeatures = [
 const standardFeatures = [
     '15 Users / Chat',
     '10MB File Limit',
-    '50 Uploads / Day',
+    '40 Uploads / Day',
     '3 Created Chats',
     'Random ChatCodes'
 ];
@@ -196,7 +196,7 @@ const standardFeatures = [
 const proFeatures = [
     '100 Users / Chat',
     '100MB File Limit',
-    'Unlimited Uploads',
+    '200 Uploads / Day',
     '20 Created Chats',
     '10 Fixed ChatCode Slots',
     'Advanced Chat Management'

@@ -47,14 +47,18 @@ async function request(url: string, options: RequestOptions = {}) {
     },
   }
 
-  let activeToken: string | null = null
-  const isRoomSpecificApi = url.startsWith('/file')
+  const isFileApi = url.startsWith('/file')
+  const isTerminateApi = url === '/chat/terminate'
 
-  if (isRoomSpecificApi) {
+  let activeToken: string | null = null
+
+  if (isFileApi) {
     activeToken = roomStore.roomToken
     if (!activeToken) {
       throw new RequestError('Access denied: You must join the room first.', { status: 401 })
     }
+  } else if (isTerminateApi) {
+    activeToken = roomStore.roomToken || userStore.identityToken
   } else {
     activeToken = userStore.identityToken
   }
@@ -81,7 +85,7 @@ async function request(url: string, options: RequestOptions = {}) {
     const response = await fetch(fullUrl, finalOptions)
 
     if (response.status === 401) {
-      if (isRoomSpecificApi) {
+      if (isFileApi) {
         roomStore.clearRoomContext()
       } else {
         userStore.logout()
