@@ -140,6 +140,11 @@
                         </template>
 
                     </section>
+
+                    <section v-if="activeSection === 'billing'"
+                        class="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500">
+                        <Billing />
+                    </section>
                 </div>
             </main>
         </div>
@@ -161,12 +166,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Loader2, ChevronLeft, Lock, User2, Upload, Type, Mail, ShieldCheck, MessagesSquare } from 'lucide-vue-next';
+import { Loader2, ChevronLeft, Lock, User2, Upload, Type, Mail, ShieldCheck, MessagesSquare, CreditCard } from 'lucide-vue-next';
 
 import ChangePasswordDialog from '@/components/account/ChangePasswordDialog.vue';
 import EmailManageDialog from '@/components/account/EmailManageDialog.vue';
 import Chats from '@/components/account/Chats.vue';
 import ProUpgradeCard from '@/components/account/ProUpgradeCard.vue';
+import Billing from '@/components/account/Billing.vue';
 
 const router = useRouter();
 const userStore = useUserStore();
@@ -175,7 +181,8 @@ const route = useRoute();
 const navItems = [
     { id: 'profile', label: 'Profile', icon: User2 },
     { id: 'security', label: 'Security', icon: ShieldCheck },
-    { id: 'chats', label: 'Chats', icon: MessagesSquare, pro: true }
+    { id: 'chats', label: 'Chats', icon: MessagesSquare, pro: true },
+    { id: 'billing', label: 'Plans & Billing', icon: CreditCard },
 ];
 
 const getSectionFromRoute = (): string | null => {
