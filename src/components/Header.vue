@@ -6,7 +6,7 @@
   )">
 
     <div :class="cn(
-      'flex h-14 items-center justify-between',
+      'flex h-14 items-center justify-between transition-all duration-300',
       route.meta.layoutWidth ? route.meta.layoutWidth : 'max-w-2xl',
       'w-full'
     )">

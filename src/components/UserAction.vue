@@ -32,12 +32,12 @@
 
                 <DropdownMenuSeparator class="bg-border/40 dark:bg-white/5" />
 
-                <DropdownMenuItem @click="router.push('/settings')" :class="cn(
+                <DropdownMenuItem @click="router.push('/account')" :class="cn(
                     'flex items-center gap-2.5 px-3 py-2.5 cursor-pointer transition-colors',
                     'focus:bg-accent dark:focus:bg-white/10'
                 )">
                     <Settings class="h-4 w-4 opacity-70" />
-                    <span class="text-sm font-medium">Settings</span>
+                    <span class="text-sm font-medium">Account</span>
                 </DropdownMenuItem>
 
                 <DropdownMenuSeparator class="bg-border/40 dark:bg-white/5" />

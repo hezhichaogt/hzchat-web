@@ -11,7 +11,7 @@ const AgreementView = () => import('@/views/UserAgreementView.vue')
 const FAQView = () => import('@/views/FAQView.vue')
 const AboutView = () => import('@/views/AboutView.vue')
 const AuthView = () => import('@/views/AuthView.vue')
-const SettingsView = () => import('@/views/SettingsView.vue')
+const AccountView = () => import('@/views/AccountView.vue')
 const ResetPasswordView = () => import('@/views/ResetPasswordView.vue')
 const PricingView = () => import('@/views/PricingView.vue')
 
@@ -47,10 +47,10 @@ const routes: Array<RouteRecordRaw> = [
         component: AboutView,
       },
       {
-        path: '/settings',
-        name: 'Settings',
-        component: SettingsView,
-        meta: { requiresAuth: true },
+        path: '/account/:section?',
+        name: 'Account',
+        component: AccountView,
+        meta: { requiresAuth: true, layoutWidth: 'max-w-3xl' },
       },
       {
         path: '/pricing',
