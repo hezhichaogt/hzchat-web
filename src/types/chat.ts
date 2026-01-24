@@ -15,6 +15,8 @@ export type ConnectionStatus =
   | 'RECONNECT_DELAY'
   | 'FINAL_DISCONNECT'
   | 'FATAL_ERROR'
+  | 'AUTH_REQUIRED'
+  | 'PASSWORD_REQUIRED'
 
 interface BaseMessage {
   id: string
@@ -58,6 +60,12 @@ export interface RoomExpiringPayload {
   reason: string
 }
 
+export interface RoomUpdatePayload {
+  name: string
+  password?: string
+  requireAuth?: boolean
+}
+
 export interface UserEventPayload {
   user: UserBase
 }
@@ -96,6 +104,7 @@ export type MessageType =
   | 'TOKEN_UPDATE'
   | 'ATTACHMENTS'
   | 'ROOM_EXPIRING'
+  | 'ROOM_INFO_UPDATED'
 
 export interface ServerMessage {
   id: string
@@ -113,6 +122,7 @@ export interface ServerMessage {
     | TokenUpdatePayload
     | AttachmentsPayload
     | RoomExpiringPayload
+    | RoomUpdatePayload
 }
 
 export type OutboundMessageType = 'TEXT' | 'ATTACHMENTS'
@@ -121,4 +131,13 @@ export interface OutboundMessage {
   type: OutboundMessageType
   tempId?: string
   payload: TextPayload | AttachmentsPayload
+}
+
+export interface PersistentChat {
+  id: string
+  code: string
+  name: string
+  requireAuth: boolean
+  hasPassword: boolean
+  metadata: any
 }

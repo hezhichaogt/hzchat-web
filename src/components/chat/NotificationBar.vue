@@ -54,9 +54,9 @@ const activeTheme = computed(() => {
 });
 
 const EXPIRING_REASONS: Record<string, string> = {
-    'deadline': 'This room has reached its maximum lifetime and will close soon.',
-    'inactivity': 'This room has been inactive and will close soon.',
-    'manual': 'The room owner has chosen to close this room. It will close shortly.'
+    'deadline': 'This chat has reached its maximum lifetime and will close soon.',
+    'inactivity': 'This chat has been inactive and will close soon.',
+    'manual': 'The owner has chosen to close this chat. It will close shortly.'
 };
 
 const displayContent = computed(() => {

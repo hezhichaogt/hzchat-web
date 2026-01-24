@@ -1,5 +1,5 @@
 <template>
-    <div class="container max-w-3xl py-6 lg:py-8">
+    <div class="container max-w-2xl py-6 lg:py-8">
         <h1 :class="[
             'text-3xl font-extrabold tracking-tight text-zinc-900 dark:text-zinc-100 mb-4 pl-4',
             activeSection ? 'hidden lg:block' : 'block'
@@ -40,7 +40,7 @@
             </aside>
 
             <main v-if="activeSection" class="flex-1 min-w-0">
-                <div class="lg:hidden flex items-center gap-2 mb-8 -ml-2">
+                <div class="lg:hidden flex items-center gap-2 mb-4 -ml-2">
                     <Button variant="ghost" size="icon" @click="navigateTo(null)"
                         class="h-10 w-10 rounded-full text-zinc-500">
                         <ChevronLeft class="size-7" />

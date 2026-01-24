@@ -79,10 +79,17 @@ export function useWebSocketReconnector({ wsUrl, onMessage, onConnected }: WebSo
   }
 
   const handleWsClose = (event: CloseEvent) => {
+    if (event.target !== wsRef.value) {
+      console.log('Discarding close event from stale WebSocket instance.')
+      return
+    }
+
     console.warn(`WebSocket closed: Code ${event.code}`)
 
     if (event.code === WS_CLOSE_CODE_SESSION_KICKED) {
-      toast.error("You've signed in elsewhere.")
+      if (hasConnectedEver.value && retryCount.value === 0) {
+        toast.error("You've signed in elsewhere.")
+      }
       connectStatus.value = 'FINAL_DISCONNECT'
       return
     }

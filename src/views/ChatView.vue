@@ -1,71 +1,152 @@
 <template>
   <div class="h-dvh w-full overflow-hidden bg-background flex flex-col items-center justify-center">
 
-    <template v-if="connectStatus === 'FATAL_ERROR'">
-      <div class="max-w-sm w-full p-6 text-center animate-in fade-in zoom-in duration-300">
-        <div class="flex justify-center mb-6">
-          <div class="p-4 rounded-full bg-destructive/10 text-destructive">
-            <AlertCircle class="w-10 h-10" />
+    <Transition name="page-fade" mode="out-in">
+      <template v-if="connectStatus === 'FATAL_ERROR'">
+        <div class="max-w-sm w-full p-6 text-center animate-in fade-in zoom-in duration-300">
+          <div class="flex justify-center mb-6">
+            <div class="p-4 rounded-full bg-destructive/10 text-destructive">
+              <AlertCircle class="w-10 h-10" />
+            </div>
+          </div>
+
+          <div class="space-y-2 mb-8">
+            <h1 class="text-2xl font-bold text-foreground tracking-tight">
+              Unable to Connect
+            </h1>
+            <p class="text-muted-foreground text-sm leading-relaxed">
+              The room might be full, or the chat server is not responding.
+            </p>
+          </div>
+
+          <div class="flex flex-col gap-3 w-full max-w-70 mx-auto">
+            <Button @click="handleRetry" variant="outline"
+              class="w-full border-border hover:bg-muted transition-all cursor-pointer">
+              Retry
+            </Button>
+
+            <Button @click="handleLeaveChat" variant="default"
+              class="w-full bg-primary text-primary-foreground hover:opacity-90 transition-all cursor-pointer font-bold">
+              Leave Chat
+            </Button>
           </div>
         </div>
+      </template>
 
-        <div class="space-y-2 mb-8">
-          <h1 class="text-2xl font-bold text-foreground tracking-tight">
-            Unable to Connect
-          </h1>
-          <p class="text-muted-foreground text-sm leading-relaxed">
-            The room might be full, or the chat server is not responding.
-          </p>
+      <template v-else-if="connectStatus === 'AUTH_REQUIRED'">
+        <div class="max-w-sm w-full p-8 text-center animate-in fade-in zoom-in duration-500">
+          <div class="flex justify-center mb-8">
+            <div class="relative">
+              <div class="p-5 rounded-3xl bg-primary/10 text-primary">
+                <UserCheck class="w-12 h-12" />
+              </div>
+              <div class="absolute -top-1 -right-1 w-4 h-4 bg-primary rounded-full border-4 border-background"></div>
+            </div>
+          </div>
+
+          <div class="space-y-3 mb-10">
+            <h1 class="text-2xl font-black text-foreground tracking-tight">
+              Sign in required
+            </h1>
+            <p class="text-muted-foreground text-sm leading-relaxed">
+              Only signed-in users can join this chat.
+            </p>
+          </div>
+
+          <div class="flex flex-col gap-4 w-full max-w-64 mx-auto">
+            <Button @click="router.push('/auth')" variant="default"
+              class="w-full bg-primary text-primary-foreground hover:opacity-90 transition-all h-12 rounded-xl font-bold shadow-lg shadow-primary/20 cursor-pointer">
+              Sign In to Join
+            </Button>
+
+            <Button @click="router.replace('/')" variant="ghost"
+              class="w-full text-muted-foreground hover:text-foreground transition-colors cursor-pointer text-xs font-medium">
+              Back to Home
+            </Button>
+          </div>
         </div>
+      </template>
 
-        <div class="flex flex-col gap-3 w-full max-w-70 mx-auto">
-          <Button @click="handleRetry" variant="outline"
-            class="w-full border-border hover:bg-muted transition-all cursor-pointer">
-            Retry
-          </Button>
+      <div v-else-if="connectStatus === 'PASSWORD_REQUIRED'" key="password"
+        class="max-w-100 w-full p-8 flex flex-col items-center justify-center space-y-8 animate-in fade-in zoom-in duration-300">
 
-          <Button @click="handleLeaveChat" variant="default"
-            class="w-full bg-primary text-primary-foreground hover:opacity-90 transition-all cursor-pointer font-bold">
-            Leave Chat
-          </Button>
-        </div>
-      </div>
-    </template>
-
-    <template v-else-if="(connectStatus === 'INIT' || connectStatus === 'CONNECTING') && !hasConnectedEver">
-      <div class="flex flex-col items-center justify-center space-y-6 animate-in fade-in duration-700">
         <div class="relative">
-          <Zap class="w-12 h-12 text-foreground fill-current animate-scale-pulse" />
-          <div class="absolute inset-0 blur-2xl bg-primary/20 rounded-full animate-scale-pulse">
+          <div
+            class="w-20 h-20 bg-muted/50 rounded-3xl flex items-center justify-center border border-border/50 shadow-sm">
+            <Lock class="w-10 h-10 text-foreground/80" />
+          </div>
+          <div class="absolute -inset-4 blur-3xl bg-primary/10 rounded-full -z-10"></div>
+        </div>
+
+        <div class="w-full space-y-6">
+          <div class="text-center space-y-2">
+            <h2 class="text-xl font-black tracking-tight text-foreground">Password Required</h2>
+            <p class="text-[10px] text-muted-foreground uppercase tracking-[0.2em] font-bold opacity-70">
+              This chat is protected by a password.
+            </p>
+          </div>
+
+          <div class="space-y-4">
+            <div class="relative group">
+              <Input v-model="chatPassword" type="password" placeholder="Enter the chat password"
+                @keyup.enter="handlePasswordSubmit"
+                class="h-12 text-center bg-background border-2 border-border/60 focus:border-primary/50 focus:ring-4 focus:ring-primary/5 rounded-2xl transition-all placeholder:text-muted-foreground/30 font-medium"
+                autofocus />
+            </div>
+
+            <div class="flex flex-col gap-3">
+              <Button @click="handlePasswordSubmit" :disabled="isSubmittingPassword || !chatPassword"
+                class="w-full h-12 rounded-2xl font-bold text-sm bg-primary text-primary-foreground hover:opacity-90 shadow-lg shadow-primary/20 active:scale-[0.98] transition-all cursor-pointer">
+                <Loader2 v-if="isSubmittingPassword" class="w-4 h-4 mr-2 animate-spin" />
+                <KeyRound v-else class="w-4 h-4 mr-2" />
+                Join Chat
+              </Button>
+
+              <Button @click="handleLeaveChat" variant="ghost"
+                class="w-full h-10 text-sm text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors cursor-pointer font-medium">
+                Back
+              </Button>
+            </div>
           </div>
         </div>
-
-        <div class="relative flex items-center justify-center">
-          <p class="text-[11px] font-black text-muted-foreground/50 tracking-[0.3em] uppercase">
-            {{ connectStatus === 'INIT' ? 'Initializing' : 'Connecting' }}
-          </p>
-
-          <span class="dot-loader absolute left-full ml-1 text-muted-foreground/50"></span>
-        </div>
       </div>
-    </template>
 
-    <div v-else class="flex-1 w-full max-w-3xl mx-auto flex flex-col min-h-0 relative border-x border-border/40">
+      <template v-else-if="(connectStatus === 'INIT' || connectStatus === 'CONNECTING') && !hasConnectedEver">
+        <div class="flex flex-col items-center justify-center space-y-6 animate-in fade-in duration-700">
+          <div class="relative">
+            <Zap class="w-12 h-12 text-foreground fill-current animate-scale-pulse" />
+            <div class="absolute inset-0 blur-2xl bg-primary/20 rounded-full animate-scale-pulse">
+            </div>
+          </div>
 
-      <Header :code="chatCode" :connectStatus="connectStatus" :users="onlineUsers" :max-users="maxUsers"
-        :is-creator="isCreator" @leave="handleLeaveChat" @terminate="handleTerminateChat" />
+          <div class="relative flex items-center justify-center">
+            <p class="text-[11px] font-black text-muted-foreground/50 tracking-[0.3em] uppercase">
+              {{ connectStatus === 'INIT' ? 'Initializing' : 'Connecting' }}
+            </p>
 
-      <Messages class="bg-transparent" :messages="messages" :on-resend="handleResendMessage" @preview="openMediaViewer"
-        :notifications="notifications" :on-remove-notification="removeNotification"
-        @room-expired="closeConnectionByUser" />
+            <span class="dot-loader absolute left-full ml-1 text-muted-foreground/50"></span>
+          </div>
+        </div>
+      </template>
 
-      <InputPanel :connectStatus="connectStatus" :files="filesToUpload" :maxFiles="currentLimits.maxFiles"
-        :maxSizeBytes="currentLimits.maxSizeBytes" @send="handleSendMessage" @upload-start="handleUploadStart"
-        @file-removed="handleFileRemoved" @preview="openMediaViewer" />
+      <div v-else class="flex-1 w-full max-w-3xl mx-auto flex flex-col min-h-0 relative border-x border-border/40">
 
-      <MediaViewer v-model="isViewerOpen" :file="activeFile" />
+        <Header :chat="chat" :connectStatus="connectStatus" :users="onlineUsers" :max-users="maxUsers"
+          :is-creator="isCreator" @leave="handleLeaveChat" @terminate="handleTerminateChat"
+          @update-chat="handleSettingsUpdate" />
 
-    </div>
+        <Messages class="bg-transparent" :messages="messages" :on-resend="handleResendMessage"
+          @preview="openMediaViewer" :notifications="notifications" :on-remove-notification="removeNotification"
+          @room-expired="closeConnectionByUser" />
+
+        <InputPanel :connectStatus="connectStatus" :files="filesToUpload" :maxFiles="currentLimits.maxFiles"
+          :maxSizeBytes="currentLimits.maxSizeBytes" @send="handleSendMessage" @upload-start="handleUploadStart"
+          @file-removed="handleFileRemoved" @preview="openMediaViewer" />
+
+        <MediaViewer v-model="isViewerOpen" :file="activeFile" />
+
+      </div>
+    </Transition>
   </div>
 </template>
 
@@ -74,12 +155,13 @@ import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useHead } from '@unhead/vue';
 
+import { Input } from '@/components/ui/input';
 import Header from '@/components/chat/Header.vue';
 import Messages from '@/components/chat/Messages.vue';
 import InputPanel from '@/components/chat/InputPanel.vue';
 import MediaViewer from '@/components/chat/MediaViewer.vue';
 import { Button } from '@/components/ui/button';
-import { AlertCircle, Zap } from 'lucide-vue-next';
+import { AlertCircle, Zap, UserCheck, Lock, Loader2, KeyRound } from 'lucide-vue-next';
 import { toast } from 'vue-sonner';
 
 import { useUserStore } from '@/stores/user'
@@ -108,7 +190,10 @@ import type {
   TextPayload,
   OutboundMessage,
   AttachmentsPayload,
+  RoomUpdatePayload,
+  PersistentChat,
 } from '@/types/chat';
+import { RESERVED_CODES } from '@/types/reserved';
 
 
 const route = useRoute();
@@ -117,7 +202,11 @@ const userStore = useUserStore()
 const roomStore = useRoomStore();
 
 const creatorId = ref<string | null>(null);
-const chatCode = ref<string | null>(null);
+const chat = ref<PersistentChat | null>(null);
+
+const chatPassword = ref('');
+const isSubmittingPassword = ref(false);
+
 const maxUsers = ref<number>(0);
 const currentUser = ref<UserProfile | null>(null);
 const onlineUsers = ref<UserBase[]>([]);
@@ -183,20 +272,38 @@ const openMediaViewer = (file: Attachment | UploadAttachment) => {
   isViewerOpen.value = true;
 };
 
+const handlePasswordSubmit = async () => {
+  if (!chatPassword.value || isSubmittingPassword.value) return;
+
+  isSubmittingPassword.value = true;
+  const token = await getValidToken();
+  if (token) {
+    initiateConnection();
+  } else {
+    isSubmittingPassword.value = false;
+    chatPassword.value = '';
+  }
+};
 
 const BASE_URL = import.meta.env.VITE_BASE_URL || window.location.origin;
 
-const dynamicTitle = computed(() =>
-  chatCode.value ? `${chatCode.value}` : 'Loading Chat...'
-);
+const dynamicTitle = computed(() => {
+  if (chat.value?.name) {
+    return chat.value.name;
+  }
+  if (chat.value?.code) {
+    return chat.value.code;
+  }
+  return 'Loading Chat...';
+});
 
 const dynamicUrl = computed(() =>
-  chatCode.value ? `${BASE_URL}/chat/${chatCode.value}` : BASE_URL
+  chat.value?.code ? `${BASE_URL}/${chat.value.code}` : BASE_URL
 );
 
 const dynamicDescription = computed(() => {
   const baseDesc = 'Create your temporary, zero-record chat room instantly. No trace, no burden.';
-  return chatCode.value ? `Join Chat ${chatCode.value}! ${baseDesc}` : baseDesc;
+  return chat.value?.code ? `Join Chat ${chat.value.code}! ${baseDesc}` : baseDesc;
 });
 
 useHead({
@@ -219,8 +326,8 @@ const WS_BASE_URL = import.meta.env.VITE_WS_BASE_URL;
 
 const wsUrl = computed(() => {
   const currentToken = roomStore.roomToken;
-  if (!chatCode.value || !currentToken) return null;
-  return `${WS_BASE_URL}/${chatCode.value}?token=${currentToken}`;
+  if (!chat.value?.code || !currentToken) return null;
+  return `${WS_BASE_URL}/${chat.value.code}?token=${currentToken}`;
 });
 
 const handleAckTimeout = (tempId: string) => {
@@ -420,6 +527,12 @@ const handleWSMessage = (event: MessageEvent) => {
       break;
     case 'ROOM_EXPIRING':
       handleRoomExpiringMessage(serverMsg);
+      break;
+    case 'ROOM_INFO_UPDATED':
+      const { name } = serverMsg.payload as RoomUpdatePayload;
+      if (chat.value && name) {
+        chat.value.name = name;
+      }
       break;
     default:
       console.warn(`Received unknown message type: ${serverMsg.type}`, serverMsg);
@@ -761,12 +874,14 @@ const handleLeaveChat = () => {
   filesToUpload.value = [];
 
   roomStore.clearRoomContext();
-  router.replace({ name: 'Home' });
+  if (router.currentRoute.value.name === 'Chat') {
+    router.back();
+  }
 };
 
 const handleTerminateChat = async () => {
   try {
-    await terminateChat(chatCode.value!);
+    await terminateChat(chat.value?.code || '');
     handleLeaveChat();
   } catch (error: any) {
     console.error('Failed to terminate chat:', error);
@@ -777,45 +892,71 @@ const handleTerminateChat = async () => {
   }
 }
 
+const handleSettingsUpdate = (newChatInfo: PersistentChat) => {
+  chat.value = newChatInfo;
+};
+
 const handleRetry = () => {
   window.location.reload();
 };
 
-const getValidToken = async (code: string): Promise<string | null> => {
-  const tokenFromState = window.history.state?.token as string;
-  if (tokenFromState) {
-    roomStore.setRoomToken(tokenFromState);
-    return tokenFromState;
-  }
-
+const getValidToken = async (): Promise<string | null> => {
   try {
-    const { token } = await joinChat(code);
-    window.history.replaceState({ ...window.history.state, token: token }, '');
+    const { token, chat: chatInfo } = await joinChat(chat.value?.code || '', chatPassword.value || undefined);
     roomStore.setRoomToken(token);
+    chat.value = chatInfo;
     return token;
-  } catch (error) {
+  } catch (error: any) {
     roomStore.clearRoomContext();
+
+    if (error.code === 2106) {
+      connectStatus.value = 'AUTH_REQUIRED';
+      return null;
+    }
+
+    if (error.code === 2105 && connectStatus.value !== 'PASSWORD_REQUIRED') {
+      connectStatus.value = 'PASSWORD_REQUIRED';
+      return null;
+    }
+
+    if (error.code === 3008) {
+      toast.error(error.message || 'Incorrect password. Please try again.');
+      return null;
+    }
+
+    toast.error(error.message || 'Failed to join the chat.');
+    connectStatus.value = 'FATAL_ERROR';
     return null;
   }
 };
 
 
-// Lifecycle Hooks
 onMounted(async () => {
   const code = route.params.code as string;
-  if (!code) {
-    connectStatus.value = 'FATAL_ERROR';
+
+  const codeRegex = /^[a-z0-9_-]{4,16}$/;
+  if (!code || !codeRegex.test(code)) {
+    router.replace('/');
     return;
   }
 
-  chatCode.value = code;
-  const token = await getValidToken(code);
-  if (!token) {
-    connectStatus.value = 'FATAL_ERROR';
+  if (RESERVED_CODES.includes(code.toLowerCase() as any)) {
+    router.replace('/');
     return;
   }
 
-  initiateConnection();
+  chat.value = {
+    id: '',
+    code: code,
+    name: '',
+    requireAuth: false,
+    hasPassword: false,
+    metadata: null
+  };
+
+  const isValid = await getValidToken();
+
+  if (isValid) initiateConnection();
 });
 
 onUnmounted(() => {
@@ -824,6 +965,25 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
+.page-fade-enter-active,
+.page-fade-leave-active {
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.page-fade-enter-active {
+  transition-duration: 0.2s;
+}
+
+.page-fade-enter-from {
+  opacity: 0;
+  transform: scale(0.98) translateY(8px);
+}
+
+.page-fade-leave-to {
+  opacity: 0;
+  transform: scale(1.02) translateY(-8px);
+}
+
 @keyframes scale-pulse {
 
   0%,

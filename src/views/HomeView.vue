@@ -21,7 +21,7 @@
 
     <section v-if="!userStore.isLoggedIn" class="px-2 mb-8 sm:mb-12">
       <div
-        class="flex items-center justify-between h-14 px-5 rounded-3xl border border-foreground/5 bg-foreground/2 dark:bg-white/2 backdrop-blur-sm group">
+        class="flex items-center justify-between h-14 px-5 rounded-full border border-foreground/5 bg-foreground/2 dark:bg-white/2 backdrop-blur-sm group">
         <div class="flex items-center gap-2">
           <Fingerprint class="size-3.5 text-foreground/40" />
           <span class="text-[10px] font-black tracking-widest uppercase text-foreground/40">ID</span>
@@ -36,7 +36,7 @@
     <div class="flex flex-col gap-8">
       <div class="px-2">
         <Button size="lg"
-          class="w-full h-16 text-lg font-black transition-fluid rounded-3xl active:scale-[0.98] shadow-xl hover:shadow-primary/20 dark:shadow-primary/10 hover:cursor-pointer group/main"
+          class="w-full h-16 text-lg font-black transition-fluid rounded-2xl active:scale-[0.98] shadow-xl hover:shadow-primary/20 dark:shadow-primary/10 hover:cursor-pointer group/main"
           @click="handleCreateChat" :disabled="isBusy">
           <div class="flex items-center justify-center gap-3">
             <Loader2 v-if="isBusy" class="size-6 animate-spin" />
@@ -58,23 +58,18 @@
 
       <div class="px-2">
         <InputGroup
-          class="h-16 border-2 border-muted bg-muted/30 dark:bg-white/3 rounded-3xl overflow-hidden transition-fluid focus-within:border-primary/50 focus-within:ring-8 focus-within:ring-primary/5 shadow-inner">
+          class="h-16 border-2 border-muted bg-muted/30 dark:bg-white/3 rounded-2xl overflow-hidden transition-fluid focus-within:border-primary/50 focus-within:ring-8 focus-within:ring-primary/5 shadow-inner">
           <InputGroupInput v-model="chatCodeInput" placeholder="CHAT CODE" maxlength="16" @keyup.enter="handleJoinChat"
             class="px-8 font-mono tracking-[0.4em] focus-visible:ring-0 border-0 bg-transparent text-2xl! placeholder:font-sans placeholder:tracking-normal placeholder:text-sm placeholder:font-bold placeholder:opacity-30"
             :disabled="isBusy" />
 
           <InputGroupAddon align="inline-end" class="pr-3">
-            <InputGroupButton @click="handleJoinChat" variant="ghost" size="sm" :class="[
-              'h-10 px-6 rounded-2xl font-black transition-all duration-300 flex items-center gap-2 shadow-none! bg-secondary group/join',
-              chatCodeInput.trim().length >= 4
-                ? 'text-secondary-foreground/50 opacity-100 hover:text-secondary-foreground'
-                : 'text-secondary-foreground/20 opacity-50 pointer-events-none'
-            ]">
+            <InputGroupButton @click="handleJoinChat" variant="link" size="sm" class="group/join"
+              :disabled="chatCodeInput.trim().length < 4">
               <Loader2 v-if="isBusy" class="size-5 animate-spin" />
               <template v-else>
-                <span class="text-[12px] tracking-[0.2em] -mr-1.5">JOIN</span>
-                <ChevronRight
-                  class="size-4 opacity-50 transition-transform duration-300 group-hover/join:translate-x-1" />
+                <span class="text-[13px] tracking-[0.2em] -mr-1.5">JOIN</span>
+                <ChevronRight class="size-4 transition-transform duration-300 group-hover/join:translate-x-1" />
               </template>
             </InputGroupButton>
           </InputGroupAddon>
@@ -107,6 +102,7 @@ import {
 
 import { useUserStore } from '@/stores/user';
 import { createChat, joinChat } from '@/services/chat';
+import { RESERVED_CODES } from '@/types/reserved';
 
 useHead({
   meta: [
@@ -129,7 +125,7 @@ const handleCreateChat = async () => {
 
   try {
     const { chatCode } = await createChat();
-    router.push(`/chat/${chatCode}`);
+    router.push(`/${chatCode}`);
   } catch (error: any) {
     console.error(error.message)
     toast.error(error.message || 'Could not create the chat. Please try again.')
@@ -146,32 +142,17 @@ const handleJoinChat = async () => {
     return;
   }
 
-  if (trimmedCode.length < 4 || trimmedCode.length > 16) {
-    toast.error('Chat code must be between 4 and 16 characters.');
-    return;
-  }
-
-  const codeRegex = /^[a-zA-Z0-9_-]+$/;
+  const codeRegex = /^[a-z0-9_-]{4,16}$/;
   if (!codeRegex.test(trimmedCode)) {
-    toast.error('Only letters, numbers, underscores (_), and hyphens (-) are allowed.');
+    toast.error('Chat codes must be 4-16 characters, using lowercase letters, numbers, hyphens, or underscores.');
     return;
   }
 
-  if (isBusy.value) return;
-  isBusy.value = true;
-
-  try {
-    const { token } = await joinChat(trimmedCode);
-    if (!token) throw new Error('No access token received.');
-    router.push({
-      path: `/chat/${trimmedCode}`,
-      state: { token }
-    });
-  } catch (error: any) {
-    console.error(error.message);
-    toast.error(error.message || 'Failed to join chat. Please check the code and try again.');
-  } finally {
-    isBusy.value = false;
+  if (RESERVED_CODES.includes(trimmedCode.toLowerCase() as any)) {
+    toast.error('This chat code is reserved and cannot be used.');
+    return;
   }
+
+  router.push(`/${trimmedCode}`);
 };
 </script>

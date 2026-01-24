@@ -1,7 +1,7 @@
 <template>
     <DropdownMenu>
         <DropdownMenuTrigger as-child>
-            <Button variant="ghost" size="icon" :class="cn(
+            <Button variant="ghost" size="icon" title="Theme" :class="cn(
                 'h-9 w-9 rounded-full focus-visible:ring-0 select-none overflow-hidden group transition-fluid',
                 'hover:bg-accent dark:hover:bg-white/10'
             )">
@@ -14,8 +14,7 @@
         </DropdownMenuTrigger>
 
         <DropdownMenuContent align="end" :side-offset="8" :class="cn(
-            'w-40 backdrop-blur-xl bg-popover/90 shadow-xl transition-fluid',
-            'border border-border/60 dark:border-white/10 dark:shadow-[0_0_25px_rgba(0,0,0,0.6)]'
+            'w-40 backdrop-blur-xl bg-popover/90 shadow-xl transition-fluid'
         )">
             <DropdownMenuItem v-for="option in options" :key="option.value" @click="setTheme(option.value)" :class="cn(
                 'flex items-center justify-between cursor-pointer px-3 py-2.5 my-0.5 rounded-md transition-colors',

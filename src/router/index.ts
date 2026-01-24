@@ -1,9 +1,9 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import type { RouteRecordRaw } from 'vue-router'
 import { useUserStore } from '@/stores/user'
+import { RESERVED_CODES } from '@/types/reserved'
 
 const DefaultLayout = () => import('@/layouts/DefaultLayout.vue')
-
 const HomeView = () => import('@/views/HomeView.vue')
 const ChatView = () => import('@/views/ChatView.vue')
 const PrivacyView = () => import('@/views/PrivacyPolicyView.vue')
@@ -50,7 +50,7 @@ const routes: Array<RouteRecordRaw> = [
         path: '/account/:section?',
         name: 'Account',
         component: AccountView,
-        meta: { requiresAuth: true, layoutWidth: 'max-w-3xl' },
+        meta: { requiresAuth: true },
       },
       {
         path: '/pricing',
@@ -61,11 +61,6 @@ const routes: Array<RouteRecordRaw> = [
     ],
   },
   {
-    path: '/chat/:code?',
-    name: 'Chat',
-    component: ChatView,
-  },
-  {
     path: '/auth',
     name: 'Auth',
     component: AuthView,
@@ -74,6 +69,11 @@ const routes: Array<RouteRecordRaw> = [
     path: '/reset-password',
     name: 'ResetPassword',
     component: ResetPasswordView,
+  },
+  {
+    path: '/:code([a-z0-9_-]{4,16})',
+    name: 'Chat',
+    component: ChatView,
   },
   {
     path: '/:catchAll(.*)',
@@ -96,6 +96,13 @@ const router = createRouter({
 router.beforeEach((to, from, next) => {
   const userStore = useUserStore()
   const isLoggedIn = userStore.isLoggedIn
+
+  if (to.name === 'Chat') {
+    const code = String(to.params.code).toLowerCase()
+    if (RESERVED_CODES.includes(code as any)) {
+      return next('/')
+    }
+  }
 
   if ((to.name === 'Auth' || to.name === 'ResetPassword') && isLoggedIn) {
     return next('/')
