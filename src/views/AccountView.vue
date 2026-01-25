@@ -15,8 +15,7 @@
 
                 <nav class="flex flex-col gap-1">
                     <button v-for="item in navItems" :key="item.id" @click="navigateTo(item.id)" :class="[
-                        'w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-semibold transition-all group',
-                        'border-b border-zinc-100 dark:border-zinc-800/50 lg:border-none',
+                        'w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-semibold transition-all group relative',
                         activeSection === item.id
                             ? 'bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100'
                             : 'text-zinc-500 hover:bg-zinc-50 dark:hover:bg-zinc-900/40'
@@ -27,6 +26,10 @@
                             class="ml-auto text-[9px] font-black bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-500 px-1.5 py-0.5 rounded-md tracking-tighter italic">
                             PRO
                         </span>
+
+                        <div v-if="activeSection !== item.id"
+                            class="absolute bottom-0 left-4 right-4 h-px bg-zinc-100 dark:bg-zinc-800/50 lg:hidden">
+                        </div>
                     </button>
 
                     <Separator class="my-6 hidden lg:block bg-zinc-100 dark:bg-zinc-800" />
@@ -89,7 +92,7 @@
                                     <span class="text-sm font-medium text-zinc-700 dark:text-zinc-300">Nickname</span>
                                 </div>
                                 <Input v-model="form.nickname"
-                                    class="border-none bg-transparent text-right text-sm font-medium focus-visible:ring-0 max-w-40 h-9 text-zinc-900 dark:text-zinc-100" />
+                                    class="border-none bg-transparent text-right text-sm font-medium focus-visible:ring-0 max-w-44 h-9 text-zinc-900 dark:text-zinc-100" />
                             </div>
                         </div>
 

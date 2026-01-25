@@ -39,13 +39,14 @@
                 <p class="text-sm text-zinc-500 max-w-sm leading-relaxed">
                     Upgrade to Pro for higher limits and reusable chat codes.
                 </p>
-                <div class="flex flex-col sm:flex-row items-center gap-3">
+
+                <div class="flex flex-col gap-2.5 max-w-xs">
                     <Button
-                        class="w-full sm:w-auto h-12 rounded-2xl bg-amber-500 hover:bg-amber-600 text-white font-black text-sm px-8 transition-all active:scale-[0.98] border-none shadow-lg shadow-amber-500/20">
+                        class="w-full h-12 rounded-2xl bg-amber-500 hover:bg-amber-600 text-white font-black text-sm px-6 transition-all active:scale-[0.98] border-none shadow-lg shadow-amber-500/20">
                         Upgrade to Pro — $4.99/mo
                     </Button>
                     <Button @click="router.push('/pricing')" variant="ghost"
-                        class="w-full sm:w-auto h-12 rounded-2xl text-zinc-500 font-bold px-6 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-all">
+                        class="w-full h-11 rounded-2xl text-zinc-500 font-bold px-6 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-all text-xs">
                         Compare plans
                     </Button>
                 </div>

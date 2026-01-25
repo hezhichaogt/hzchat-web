@@ -21,7 +21,7 @@
 
         <div v-else>
             <div v-for="chat in chats" :key="chat.id"
-                class="group px-5 pt-4 pb-1 rounded-2xl mt-4 border border-zinc-100 dark:border-zinc-800 bg-white dark:bg-zinc-900/50 flex flex-col justify-between transition-all shadow-sm">
+                class="group px-5 pt-4 pb-1 rounded-2xl mt-4 border border-zinc-100 dark:border-zinc-800 bg-white dark:bg-zinc-900/50 flex flex-col justify-between transition-all shadow-xs">
                 <div class="flex items-center justify-between gap-6 mb-4">
                     <h3 class="text-sm font-semibold text-zinc-800 dark:text-zinc-200 line-clamp-1 break-all"
                         :title="chat.name">
