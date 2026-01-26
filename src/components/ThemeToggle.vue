@@ -14,7 +14,7 @@
         </DropdownMenuTrigger>
 
         <DropdownMenuContent align="end" :side-offset="8" :class="cn(
-            'w-40 backdrop-blur-xl bg-popover/90 shadow-xl transition-fluid'
+            'w-40 bg-popover/90 bg-background shadow-xl transition-fluid'
         )">
             <DropdownMenuItem v-for="option in options" :key="option.value" @click="setTheme(option.value)" :class="cn(
                 'flex items-center justify-between cursor-pointer px-3 py-2.5 my-0.5 rounded-md transition-colors',

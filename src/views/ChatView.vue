@@ -452,7 +452,9 @@ const handleAttachmentMessage = (message: ServerMessage) => {
     sender,
     isOwn,
     content: description || '',
-    attachments,
+    attachments: attachments.map(attr => ({
+      ...attr,
+    })),
   } as UserMessage);
 };
 
@@ -555,7 +557,7 @@ const {
 
 
 // Message Sending
-const handleSendMessage = (content: string, attachmentsToResend?: Attachment[]) => {
+const handleSendMessage = async (content: string, attachmentsToResend?: Attachment[]) => {
   if (!isReady.value) {
     toast.warning('Not connected yet. Please try again in a moment.');
     return;
@@ -590,37 +592,59 @@ const handleSendMessage = (content: string, attachmentsToResend?: Attachment[]) 
     }));
 
   const trimmedContent = content.trim();
-  const hasAttachments = finalAttachments.length > 0;
-  if (!trimmedContent && !hasAttachments) return;
+  if (!trimmedContent && finalAttachments.length === 0) return;
 
+  if (!attachmentsToResend) {
+    filesToUpload.value = [];
+    chatInputRef.value?.clearInput();
+  }
+
+  if (finalAttachments.length > 0) {
+    for (let i = 0; i < finalAttachments.length; i++) {
+      const isFirst = i === 0;
+      const currentDesc = isFirst ? (trimmedContent || undefined) : undefined;
+      const singleAttachment = [finalAttachments[i]];
+
+      await emitSingleMessage("ATTACHMENTS", {
+        description: currentDesc,
+        attachments: singleAttachment
+      });
+
+      if (i < finalAttachments.length - 1) {
+        await new Promise(resolve => setTimeout(resolve, 150));
+      }
+    }
+  } else {
+    await emitSingleMessage("TEXT", { content: trimmedContent });
+  }
+};
+
+const emitSingleMessage = async (type: "TEXT" | "ATTACHMENTS", payload: any) => {
   const tempId = generateTempID();
+
   const tempMessage: UserMessage = {
     id: tempId,
     timestamp: Date.now(),
     messageType: 'user',
     sender: currentUser.value!,
     isOwn: true,
-    content: trimmedContent,
+    content: payload.content || payload.description || '',
     tempId: tempId,
     status: 'sending',
-    attachments: hasAttachments ? finalAttachments : undefined,
+    attachments: payload.attachments || undefined,
   };
+
   messages.value.push(tempMessage as ClientMessage);
 
   const outboundMessage: OutboundMessage = {
-    type: hasAttachments ? "ATTACHMENTS" : "TEXT",
+    type,
     tempId,
-    payload: hasAttachments
-      ? { description: trimmedContent || undefined, attachments: finalAttachments } as AttachmentsPayload
-      : { content: trimmedContent } as TextPayload
+    payload
   };
 
   const sent = sendData(outboundMessage);
+
   if (sent) {
-    if (!attachmentsToResend) {
-      filesToUpload.value = [];
-      chatInputRef.value?.clearInput();
-    }
     const timerId = setTimeout(() => {
       handleAckTimeout(tempId);
     }, ACK_TIMEOUT_MS);
@@ -651,6 +675,7 @@ const handleResendMessage = (failedMessage: UserMessage) => {
     }
     messages.value.splice(index, 1);
   }
+
   handleSendMessage(failedMessage.content, failedMessage.attachments);
 };
 
@@ -704,6 +729,33 @@ const uploadFile = async (file: UploadAttachment, onUploadProgress?: (percent: n
       currentFile.fileSize = fileToUpload.size;
       currentFile.mimeType = fileToUpload.type;
       currentFile.fileName = fileToUpload.name;
+
+      try {
+        const dimensions = await new Promise<{ width: number, height: number }>((resolve, reject) => {
+          const img = new Image();
+          const url = URL.createObjectURL(fileToUpload);
+
+          img.onload = () => {
+            resolve({
+              width: img.naturalWidth,
+              height: img.naturalHeight
+            });
+            URL.revokeObjectURL(url);
+          };
+
+          img.onerror = () => {
+            URL.revokeObjectURL(url);
+            reject(new Error('Failed to load image for dimensions'));
+          };
+
+          img.src = url;
+        });
+
+        meta.width = dimensions.width;
+        meta.height = dimensions.height;
+      } catch (dimError) {
+        console.warn('Could not get image dimensions, falling back:', dimError);
+      }
     }
 
     if (currentFile.mimeType.startsWith('video/')) {
@@ -733,11 +785,13 @@ const uploadFile = async (file: UploadAttachment, onUploadProgress?: (percent: n
     if (currentFile.mimeType.startsWith('audio/')) {
       try {
         const { duration } = await processAudioFile(fileToUpload);
-        meta = { duration };
+        meta = { ...meta, duration };
       } catch (audioError) {
         console.warn('Audio metadata extraction failed:', audioError);
       }
     }
+
+    meta.size = fileToUpload.size;
 
     const limit = currentLimits.value.maxSizeBytes;
     const limitMB = limit / (1024 * 1024);
@@ -825,7 +879,7 @@ const processAudioFile = async (file: File): Promise<{ duration: number }> => {
     setTimeout(() => {
       URL.revokeObjectURL(url);
       reject(new Error('Audio metadata timeout'));
-    }, 2000);
+    }, 5000);
   });
 };
 

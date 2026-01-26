@@ -8,7 +8,7 @@
                 @close="onRemoveNotification" @room-expired="emit('room-expired')" />
         </Transition>
 
-        <div ref="messagesWrapperRef" class="max-w-5xl mx-auto py-4 px-4 md:px-6">
+        <div ref="messagesWrapperRef" class="w-full mx-auto py-4 px-4 md:px-6">
             <div class="space-y-8">
                 <div v-for="(msg, index) in messages" :key="msg.id || msg.tempId"
                     :ref="(el) => { if (index === messages.length - 1) lastMessageRef = (el as any); }">

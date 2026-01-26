@@ -9,9 +9,13 @@
                     focus-within:border-zinc-300 dark:focus-within:border-zinc-700">
 
                 <div v-if="files.length > 0" class="px-4 pt-4">
-                    <div class="flex flex-wrap gap-3 pb-3 mb-1 border-b border-zinc-200/50 dark:border-zinc-800/50">
-                        <div v-for="file in files" :key="file.id" class="w-16 h-16 shrink-0">
-                            <Attachment :file="file" @remove="removeFile(file.id, file)"
+                    <div class="flex flex-wrap sm:grid gap-2 pb-3 mb-1 border-b border-zinc-200/50 dark:border-zinc-800/50
+                        sm:grid-cols-[repeat(auto-fill,80px)]">
+
+                        <div v-for="file in files" :key="file.id" class="w-[calc(20%-6.4px)] sm:w-full 
+                            aspect-square shrink-0 animate-in zoom-in-95 duration-200">
+
+                            <Attachment :file="file" :inMessage="false" @remove="removeFile(file.id, file)"
                                 @preview="handlePreview(file)" />
                         </div>
                     </div>

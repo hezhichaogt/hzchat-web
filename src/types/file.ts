@@ -5,14 +5,6 @@ export interface Attachment {
   fileSize: number
   meta?: Record<string, any>
   url?: string | null
-  status?:
-    | 'downloading'
-    | 'downloaded'
-    | 'download_failed'
-    | 'pending'
-    | 'uploading'
-    | 'uploaded'
-    | 'upload_failed'
 }
 
 export interface UploadAttachment extends Attachment {

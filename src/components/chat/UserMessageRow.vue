@@ -19,36 +19,28 @@
 
             <div :class="['flex items-end gap-2 w-full', message.isOwn ? 'flex-row-reverse' : 'flex-row']">
                 <div :class="[
-                    'relative flex flex-col group transition-all duration-200 shadow-sm overflow-hidden min-w-10',
+                    'relative flex flex-col group transition-all duration-200 shadow-sm overflow-hidden w-fit',
                     message.isOwn
-                        ? 'bg-zinc-800 dark:bg-zinc-100 text-zinc-50 dark:text-zinc-900 rounded-2xl rounded-tr-none shadow-md shadow-zinc-200/50'
-                        : 'bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700/50 rounded-2xl rounded-tl-none text-zinc-800 dark:text-zinc-200'
+                        ? 'bg-zinc-800 dark:bg-zinc-200 text-zinc-100 dark:text-zinc-900 rounded-2xl rounded-tr-none'
+                        : 'bg-zinc-100/80 dark:bg-zinc-800/40 rounded-2xl rounded-tl-none text-zinc-800 dark:text-zinc-200'
                 ]">
-                    <div v-if="isAttachments" :class="[
-                        'p-1 gap-1 grid w-full bg-black/5 dark:bg-white/5',
-                        displayAttachments.length === 1 ? 'grid-cols-1 w-48 md:w-64' : '',
-                        displayAttachments.length === 2 ? 'grid-cols-2 w-60' : '',
-                        displayAttachments.length === 3 ? 'grid-cols-3 w-72' : '',
-                        displayAttachments.length === 4 ? 'grid-cols-2 w-60' : '',
-                        displayAttachments.length >= 5 ? 'grid-cols-3 w-72' : ''
-                    ]">
+                    <div v-if="isAttachments"
+                        :class="['w-full overflow-hidden', message.isOwn ? 'rounded-tl-2xl' : 'rounded-tr-2xl']">
                         <div v-for="attachment in displayAttachments" :key="attachment.fileKey"
-                            class="relative overflow-hidden rounded-lg group/attach min-w-24 min-h-24 shrink-0" :class="[
-                                displayAttachments.length === 1 ? 'w-full aspect-4/3' : 'aspect-square'
-                            ]">
-
-                            <AttachmentCard :file="attachment" @preview="emit('preview', attachment)" />
+                            class="relative overflow-hidden w-full">
+                            <AttachmentCard :file="attachment" :in-message="true"
+                                @preview="emit('preview', attachment)" />
                         </div>
                     </div>
 
                     <div v-if="message.content.trim()"
-                        class="px-4 py-2.5 text-[14px] leading-relaxed wrap-break-word whitespace-pre-wrap font-normal">
+                        class="p-2.5 pb-0 text-[14px] leading-relaxed wrap-break-word whitespace-pre-wrap font-normal">
                         {{ message.content }}
                     </div>
 
                     <div :class="[
-                        'text-[9px] pb-1.5 px-3 self-end font-medium tracking-tighter transition-opacity opacity-70',
-                        message.isOwn ? 'text-zinc-400 dark:text-zinc-500' : 'text-zinc-400 dark:text-zinc-500'
+                        'text-[9px] py-2 px-3 self-end font-medium tracking-tighter transition-opacity opacity-70',
+                        message.isOwn ? 'text-zinc-300 dark:text-zinc-500' : 'text-zinc-500 dark:text-zinc-400'
                     ]">
                         {{ relativeTimeText }}
                     </div>
@@ -103,7 +95,7 @@ const displayAttachments = computed<Attachment[]>(() => {
     const currentToken = roomStore.roomToken;
     if (!isAttachments.value || !currentToken) return [];
 
-    const mapped = props.message.attachments!.map(a => {
+    return props.message.attachments!.map(a => {
         const baseUrl = `${VITE_API_BASE_URL}/file/presign-download`;
         const mainUrl = `${baseUrl}?k=${encodeURIComponent(a.fileKey)}&n=${encodeURIComponent(a.fileName)}&t=${encodeURIComponent(currentToken)}`;
 
@@ -117,12 +109,6 @@ const displayAttachments = computed<Attachment[]>(() => {
             url: mainUrl,
             videoCoverUrl: videoCoverUrl
         };
-    });
-
-    return mapped.sort((a, b) => {
-        const aIsImage = a.mimeType.startsWith('image/') ? 1 : 0;
-        const bIsImage = b.mimeType.startsWith('image/') ? 1 : 0;
-        return bIsImage - aIsImage;
     });
 });
 

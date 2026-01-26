@@ -82,15 +82,14 @@
                     </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" class="w-36 shadow-xl z-50 bg-white dark:bg-zinc-950">
-                    <DropdownMenuItem v-if="showChatSettings" @click="handleOpenSettings" class="cursor-pointer py-2.5">
+                    <DropdownMenuItem v-if="showChatSettings" @click="handleOpenSettings"
+                        class="cursor-pointer py-3 mb-0.5">
                         <Settings2 class="mr-0.5 size-4" />
                         <span class="text-xs font-semibold">Chat Settings</span>
                     </DropdownMenuItem>
 
-                    <DropdownMenuSeparator v-if="showChatSettings" />
-
                     <DropdownMenuItem @select="handleLeaveClick"
-                        class="text-destructive cursor-pointer focus:text-destructive focus:bg-destructive/10 py-2.5">
+                        class="text-destructive cursor-pointer focus:text-destructive focus:bg-destructive/10 py-3">
                         <LogOut class="mr-0.5 size-4" />
                         <span class="text-xs font-semibold">Leave Chat</span>
                     </DropdownMenuItem>
