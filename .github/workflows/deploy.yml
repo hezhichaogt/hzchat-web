@@ -36,6 +36,9 @@ jobs:
           VITE_API_BASE_URL: ${{ secrets.PROD_API_URL }}
           VITE_WS_BASE_URL: ${{ secrets.PROD_WS_URL }}
           VITE_TURNSTILE_SITE_KEY: ${{ secrets.PROD_TURNSTILE_SITE_KEY }}
+          VITE_PADDLE_CLIENT_TOKEN: ${{ secrets.VITE_PADDLE_CLIENT_TOKEN }}
+          VITE_PADDLE_PRO_MONTHLY_ID: ${{ secrets.VITE_PADDLE_PRO_MONTHLY_ID }}
+          VITE_PADDLE_PRO_YEARLY_ID: ${{ secrets.VITE_PADDLE_PRO_YEARLY_ID }}
         run: npm run build
 
       - name: Run Cleanup on VPS before Deploy
