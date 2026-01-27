@@ -58,7 +58,7 @@
 
 <script setup lang="ts">
 import { ref } from 'vue';
-import { useRouter } from 'vue-router';
+import { useRouter, useRoute } from 'vue-router';
 
 import { useForm } from 'vee-validate';
 import { toTypedSchema } from '@vee-validate/zod';
@@ -85,7 +85,6 @@ defineEmits<{
     (e: 'forgot-password'): void
 }>();
 
-
 const loginSchema = toTypedSchema(
     z.object({
         username: z.string()
@@ -106,6 +105,7 @@ const loginForm = useForm({
 });
 
 const isLoading = ref(false);
+const route = useRoute();
 const router = useRouter();
 const userStore = useUserStore();
 
@@ -114,17 +114,13 @@ const onLoginSubmit = loginForm.handleSubmit(async (values) => {
 
     try {
         const { token, user } = await login(values);
-
         userStore.handleLoginSuccess(token, user);
-
+        const redirectTo = route.query.redirect as string || '/';
+        router.replace(redirectTo);
         toast.success(`Welcome back!`);
-
-        router.replace('/');
-
     } catch (error: any) {
         const message =
             error?.message || 'Invalid username or password';
-
         toast.error(message);
     } finally {
         isLoading.value = false;

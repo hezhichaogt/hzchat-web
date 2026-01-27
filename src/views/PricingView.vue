@@ -138,12 +138,14 @@
                     </li>
                 </ul>
 
-                <Button @click="!userStore.isPro && handleUpgrade()" :disabled="isBusy || userStore.isPro" :class="[
-                    'w-full h-14 rounded-2xl font-black uppercase text-[11px] tracking-[0.2em] transition-all duration-300',
-                    userStore.isPro
-                        ? 'bg-zinc-100 text-zinc-950 dark:bg-zinc-800 dark:text-zinc-100 cursor-not-allowed shadow-none border border-slate-900 dark:border-slate-100'
-                        : 'text-primary-foreground bg-primary shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98]'
-                ]">
+                <Button
+                    @click="!userStore.isPro && handleUpgrade(billingCycle === 'monthly' ? paddleProMonthlyId : paddleProYearlyId)"
+                    :disabled="isBusy || userStore.isPro" :class="[
+                        'w-full h-14 rounded-2xl font-black uppercase text-[11px] tracking-[0.2em] transition-all duration-300',
+                        userStore.isPro
+                            ? 'bg-zinc-100 text-zinc-950 dark:bg-zinc-800 dark:text-zinc-100 cursor-not-allowed shadow-none border border-slate-900 dark:border-slate-100'
+                            : 'text-primary-foreground bg-primary shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98]'
+                    ]">
                     <Loader2 v-if="isBusy" class="size-4 animate-spin mr-2" />
                     <span v-else>
                         {{ userStore.isPro ? 'Current Plan' : 'Get Pro Now' }}
@@ -166,13 +168,31 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import { Button } from '@/components/ui/button';
 import { Check, Sparkles, Loader2, CreditCard } from 'lucide-vue-next';
 import { toast } from 'vue-sonner';
 import { useUserStore } from '@/stores/user';
+import { useThemeStore } from '@/stores/theme';
+import { initializePaddle, type Paddle } from '@paddle/paddle-js';
+import { useRouter } from 'vue-router';
 
+const paddleToken = import.meta.env.VITE_PADDLE_CLIENT_TOKEN;
+const paddleProMonthlyId = import.meta.env.VITE_PADDLE_PRO_MONTHLY_ID;
+const paddleProYearlyId = import.meta.env.VITE_PADDLE_PRO_YEARLY_ID;
+
+const router = useRouter();
 const userStore = useUserStore();
+const themeStore = useThemeStore();
+
+const resolvedTheme = computed(() => {
+    if (themeStore.theme === 'system') {
+        return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    }
+    return themeStore.theme;
+});
+
+const paddleInstance = ref<Paddle>();
 
 const billingCycle = ref<'monthly' | 'yearly'>('monthly');
 const isBusy = ref(false);
@@ -202,9 +222,48 @@ const proFeatures = [
     'Advanced Chat Management'
 ];
 
-const handleUpgrade = async () => {
-    toast.info('TODO...');
+const handleUpgrade = (priceId: string) => {
+    if (!userStore.isLoggedIn) {
+        toast.info('Please login to continue');
+        router.push({
+            name: 'Auth',
+            query: { redirect: '/pricing' }
+        });
+        return;
+    }
+
+    paddleInstance.value?.Checkout.open({
+        settings: {
+            displayMode: 'overlay',
+            theme: resolvedTheme.value,
+            locale: 'en'
+        },
+        items: [{
+            priceId: priceId,
+            quantity: 1
+        }],
+        customData: {
+            userId: userStore.profile.id,
+            planName: billingCycle.value
+        },
+    });
 };
+
+onMounted(async () => {
+    const instance = await initializePaddle({
+        environment: 'sandbox',
+        token: paddleToken,
+        eventCallback: (event: any) => {
+            if (event.name === 'checkout.completed') {
+                console.log('Success!');
+            }
+        }
+    });
+
+    if (instance) {
+        paddleInstance.value = instance;
+    }
+});
 </script>
 
 <style scoped>

@@ -96,12 +96,14 @@ router.beforeEach((to, from, next) => {
   }
 
   if ((to.name === 'Auth' || to.name === 'ResetPassword') && isLoggedIn) {
-    return next('/')
+    const redirectTo = (to.query.redirect as string) || '/'
+    return next(redirectTo)
   }
 
   if (to.meta.requiresAuth && !isLoggedIn) {
     return next({
       name: 'Auth',
+      query: { redirect: to.fullPath },
     })
   }
 
