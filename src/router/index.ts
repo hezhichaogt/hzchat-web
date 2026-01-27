@@ -6,14 +6,12 @@ import { RESERVED_CODES } from '@/types/reserved'
 const DefaultLayout = () => import('@/layouts/DefaultLayout.vue')
 const HomeView = () => import('@/views/HomeView.vue')
 const ChatView = () => import('@/views/ChatView.vue')
-const PrivacyView = () => import('@/views/PrivacyPolicyView.vue')
-const AgreementView = () => import('@/views/UserAgreementView.vue')
-const FAQView = () => import('@/views/FAQView.vue')
 const AboutView = () => import('@/views/AboutView.vue')
 const AuthView = () => import('@/views/AuthView.vue')
 const AccountView = () => import('@/views/AccountView.vue')
 const ResetPasswordView = () => import('@/views/ResetPasswordView.vue')
 const PricingView = () => import('@/views/PricingView.vue')
+const DocView = () => import('@/views/DocView.vue')
 
 const routes: Array<RouteRecordRaw> = [
   {
@@ -27,20 +25,13 @@ const routes: Array<RouteRecordRaw> = [
         meta: { hideHeaderBorder: true },
       },
       {
-        path: '/privacy',
-        name: 'PrivacyPolicy',
-        component: PrivacyView,
+        path: '/docs/:slug?',
+        name: 'Docs',
+        component: DocView,
+        meta: { layoutWidth: 'max-w-5xl' },
       },
-      {
-        path: '/agreement',
-        name: 'UserAgreement',
-        component: AgreementView,
-      },
-      {
-        path: '/faq',
-        name: 'FAQ',
-        component: FAQView,
-      },
+      { path: '/privacy', redirect: '/docs/privacy' },
+      { path: '/terms', redirect: '/docs/terms' },
       {
         path: '/about',
         name: 'AboutUs',

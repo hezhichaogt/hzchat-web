@@ -14,10 +14,7 @@
                 <router-link to="/privacy" class="hover:text-primary transition-fluid px-1.5 py-1">Privacy</router-link>
 
                 <span class="opacity-30">·</span>
-                <router-link to="/agreement" class="hover:text-primary transition-fluid px-1.5 py-1">Terms</router-link>
-
-                <span class="opacity-30">·</span>
-                <router-link to="/faq" class="hover:text-primary transition-fluid px-1.5 py-1">FAQ</router-link>
+                <router-link to="/terms" class="hover:text-primary transition-fluid px-1.5 py-1">Terms</router-link>
 
                 <span class="opacity-30">·</span>
                 <router-link to="/pricing" class="hover:text-primary transition-fluid px-1.5 py-1">Pricing</router-link>
